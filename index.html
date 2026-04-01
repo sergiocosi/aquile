@@ -2,11 +2,11 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Aquile CC — Ottimizzatore</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
   :root {
     --bg:      #f5f6fa;
     --bg2:     #ffffff;
@@ -31,14 +31,14 @@
     --purplelt:#f0eafa;
     --sky:     #0090d0;
     --skylt:   #e6f4fb;
-    --font:    'Outfit', sans-serif;
-    --mono:    'JetBrains Mono', monospace;
+    --font:    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --mono:    ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --radius:  8px;
     --radius2: 12px;
     --shadow:  0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px var(--border);
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
   body {
     background: var(--bg);
@@ -47,6 +47,7 @@
     font-size: 14px;
     line-height: 1.5;
     min-height: 100vh;
+    -webkit-text-size-adjust: 100%;
   }
 
   /* ── HEADER ── */
@@ -130,6 +131,8 @@
     border-radius: 6px;
     transition: all 0.15s;
     letter-spacing: 0.3px;
+    -webkit-appearance: none;
+    appearance: none;
   }
   .tab:hover { color: var(--text2); background: var(--bg3); }
   .tab.active { background: var(--royal); color: #fff; }
@@ -147,6 +150,8 @@
     background: var(--bg2);
     color: var(--text2);
     transition: all 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
   }
   .day-btn:hover { border-color: var(--royal); color: var(--royal); }
   .day-btn.active { background: var(--royal); border-color: var(--royal); color: #fff; }
@@ -237,6 +242,8 @@
     background: var(--bg2);
     color: var(--text2);
     transition: all 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
   }
   .btn:hover { border-color: var(--royal); color: var(--royal); }
   .btn-primary {
@@ -365,9 +372,17 @@
   .guide-body p { font-size: 13px; color: var(--text2); line-height: 1.6; }
   .guide-list { margin: 6px 0 0 16px; font-size: 13px; color: var(--text2); line-height: 2; }
 
-    font-size: 12px; font-family: var(--font); padding: 7px 12px;
-    border: 1.5px solid var(--border2); border-radius: var(--radius);
-    background: var(--bg2); color: var(--text); cursor: pointer;
+  select {
+    font-size: 16px;
+    font-family: var(--font);
+    padding: 7px 12px;
+    border: 1.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--bg2);
+    color: var(--text);
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
   }
   select:focus { outline: none; border-color: var(--royal); }
 
@@ -385,22 +400,9 @@
 <div class="header">
   <!-- Eagle SVG -->
   <div class="eagle-wrap">
-    <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- Wings -->
-      <path d="M19 22 C10 18, 2 20, 1 14 C4 16, 8 15, 12 17 C9 12, 5 10, 4 5 C8 9, 12 11, 14 16 C15 13, 14 9, 13 6 C16 10, 17 14, 17 18Z" fill="rgba(255,255,255,0.85)"/>
-      <path d="M19 22 C28 18, 36 20, 37 14 C34 16, 30 15, 26 17 C29 12, 33 10, 34 5 C30 9, 26 11, 24 16 C23 13, 24 9, 25 6 C22 10, 21 14, 21 18Z" fill="rgba(255,255,255,0.85)"/>
-      <!-- Body -->
-      <ellipse cx="19" cy="24" rx="5" ry="7" fill="white"/>
-      <!-- Head -->
-      <ellipse cx="19" cy="15" rx="4" ry="4" fill="white"/>
-      <!-- Beak -->
-      <path d="M19 17 L22 19 L19 19Z" fill="var(--gold)"/>
-      <!-- Eye -->
-      <circle cx="20.5" cy="14.5" r="1" fill="var(--royal2)"/>
-      <!-- Talons -->
-      <path d="M16 30 L14 34 M16 30 L15 34 M16 30 L17 34" stroke="var(--gold)" stroke-width="1.2" stroke-linecap="round"/>
-      <path d="M22 30 L20 34 M22 30 L22 34 M22 30 L24 34" stroke="var(--gold)" stroke-width="1.2" stroke-linecap="round"/>
-    </svg>
+  <img src="data:image/jpeg;base64,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" 
+       alt="Club Aquile" 
+       style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0">
   </div>
   <div class="logo-text">
     <div class="logo-name">AQUILE</div>
@@ -906,17 +908,19 @@ function renderRankingTable(){
   const disc=document.getElementById('disc-select').value;
   if(!disc){document.getElementById('ranking-table').innerHTML='';return;}
   const sorted=PLAYERS.map(p=>({p,r:getRank(p,disc)})).filter(x=>x.r!=null).sort((a,b)=>a.r-b.r);
-  let h=`<table><thead><tr><th>#</th><th>Giocatore</th><th>Rank CC</th><th>Trofei</th><th>PB 100m</th><th>PB 400m</th></tr></thead><tbody>`;
+  const showPB = disc==='100m'||disc==='400m';
+  const pbKey = disc==='400m'?'p400':'p100';
+  const pbLabel = disc==='400m'?'PB 400m':'PB 100m';
+  let h=`<table><thead><tr><th>#</th><th>Giocatore</th><th>Rank CC</th>${showPB?`<th>${pbLabel}</th>`:''}</tr></thead><tbody>`;
   sorted.forEach(({p,r},i)=>{
     const pb=PB[p];
     const est=isEst(p)?` <span class="badge b-est" style="font-size:9px">est.</span>`:'';
     const top=TOP_NAMES.has(p)?` <span class="badge b-top" style="font-size:9px">TOP</span>`:'';
-    h+=`<tr><td style="font-family:var(--mono);color:var(--text3);font-weight:600">${i+1}</td>
+    h+=`<tr>
+      <td style="font-family:var(--mono);color:var(--text3);font-weight:600">${i+1}</td>
       <td class="pname">${p}${est}${top}</td>
       <td><span class="rp ${rClass(r)}">${r}</span></td>
-      <td>${pb?`<span style="font-family:var(--mono);font-size:11px;color:var(--text2)">${(pb.t/1000).toFixed(0)}k</span> ${tbar(p)}`:'—'}</td>
-      <td style="font-family:var(--mono);color:var(--text2)">${pb?pb.p100+'s':'—'}</td>
-      <td style="font-family:var(--mono);color:var(--text2)">${pb?pb.p400+'s':'—'}</td>
+      ${showPB?`<td style="font-family:var(--mono);color:var(--text2)">${pb?pb[pbKey]+'s':'—'}</td>`:''}
     </tr>`;
   });
   document.getElementById('ranking-table').innerHTML=h+'</tbody></table>';
