@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aquile CC — Ottimizzatore</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg:      #f5f6fa;
+    --bg2:     #ffffff;
+    --bg3:     #eef0f7;
+    --border:  #e0e4f0;
+    --border2: #c8ceea;
+    --text:    #1a1e2e;
+    --text2:   #5a6080;
+    --text3:   #9aa0c0;
+    --royal:   #2d4eaa;
+    --royal2:  #1a3080;
+    --royallt: #e8edf8;
+    --gold:    #f0a020;
+    --goldlt:  #fff7e0;
+    --green:   #18a060;
+    --greenlt: #e6f7ef;
+    --orange:  #e06020;
+    --orangelt:#fff0e8;
+    --red:     #d03030;
+    --redlt:   #fdeaea;
+    --purple:  #7040c0;
+    --purplelt:#f0eafa;
+    --sky:     #0090d0;
+    --skylt:   #e6f4fb;
+    --font:    'Outfit', sans-serif;
+    --mono:    'JetBrains Mono', monospace;
+    --radius:  8px;
+    --radius2: 12px;
+    --shadow:  0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px var(--border);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--royal2);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(29,48,128,0.3);
+  }
+
+  /* Eagle SVG logo */
+  .eagle-wrap { flex-shrink: 0; }
+
+  .logo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .logo-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    line-height: 1.1;
+  }
+  .logo-sub {
+    font-size: 10px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.55);
+    letter-spacing: 1px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+  }
+
+  .league-badge {
+    background: var(--gold);
+    color: #7a4000;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.8px;
+    font-family: var(--mono);
+  }
+  .header-right {
+    margin-left: auto;
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    font-family: var(--mono);
+  }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 1080px; margin: 0 auto; padding: 24px 20px; }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    background: var(--bg2);
+    border-radius: var(--radius2);
+    padding: 4px;
+    gap: 2px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  .tab {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--text3);
+    border-radius: 6px;
+    transition: all 0.15s;
+    letter-spacing: 0.3px;
+  }
+  .tab:hover { color: var(--text2); background: var(--bg3); }
+  .tab.active { background: var(--royal); color: #fff; }
+
+  /* ── DAY BAR ── */
+  .day-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .day-btn {
+    padding: 7px 18px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    border: 1.5px solid var(--border2);
+    border-radius: 20px;
+    background: var(--bg2);
+    color: var(--text2);
+    transition: all 0.15s;
+  }
+  .day-btn:hover { border-color: var(--royal); color: var(--royal); }
+  .day-btn.active { background: var(--royal); border-color: var(--royal); color: #fff; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--bg2);
+    border-radius: var(--radius2);
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1.5px solid var(--bg3);
+    font-family: var(--mono);
+  }
+
+  /* ── TABLES ── */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text3);
+    text-align: left;
+    padding: 6px 10px;
+    border-bottom: 1.5px solid var(--bg3);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-family: var(--mono);
+  }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--bg3); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--bg3); }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 20px;
+    white-space: nowrap;
+    font-family: var(--mono);
+  }
+  .b-obl  { background: var(--skylt);    color: var(--sky); }
+  .b-lib  { background: var(--greenlt);  color: var(--green); }
+  .b-rif  { background: var(--orangelt); color: var(--orange); }
+  .b-gray { background: var(--bg3);      color: var(--text3); }
+  .b-est  { background: var(--purplelt); color: var(--purple); }
+  .b-top  { background: var(--goldlt);   color: var(--gold); }
+  .b-err  { background: var(--redlt);    color: var(--red); }
+  .b-warn { background: var(--orangelt); color: var(--orange); }
+  .b-royal{ background: var(--royallt);  color: var(--royal); }
+
+  /* ── RANK PILLS ── */
+  .rp {
+    display: inline-block;
+    width: 26px; height: 19px;
+    line-height: 19px;
+    text-align: center;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: 3px;
+  }
+  .r1 { background: var(--greenlt);  color: var(--green); }
+  .r2 { background: var(--skylt);    color: var(--sky); }
+  .r3 { background: var(--orangelt); color: var(--orange); }
+  .r4 { background: var(--bg3);      color: var(--text3); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 9px 20px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    border: 1.5px solid var(--border2);
+    border-radius: 8px;
+    background: var(--bg2);
+    color: var(--text2);
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--royal); color: var(--royal); }
+  .btn-primary {
+    background: var(--royal);
+    border-color: var(--royal);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--royal2); }
+  .btn-copy {
+    font-size: 11px;
+    padding: 6px 14px;
+    margin-top: 10px;
+    background: var(--bg3);
+    border-color: var(--border2);
+    color: var(--text2);
+  }
+  .btn-copy:hover { background: var(--royallt); border-color: var(--royal); color: var(--royal); }
+
+  /* ── COPYBOX ── */
+  .copybox {
+    background: var(--bg3);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    white-space: pre-wrap;
+    line-height: 1.7;
+    color: var(--text2);
+    margin-top: 10px;
+  }
+
+  /* ── GRID ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  /* ── SQUAD CARDS ── */
+  .squad-card {
+    background: var(--bg3);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+  .sq-a { border-left: 4px solid var(--royal); }
+  .sq-b { border-left: 4px solid var(--green); }
+  .sq-c { border-left: 4px solid var(--gold); }
+  .sq-d { border-left: 4px solid var(--purple); }
+  .sq-x { border-left: 4px solid var(--border2); }
+  .squad-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .squad-label { font-size: 12px; font-weight: 700; color: var(--text); }
+  .squad-note { font-size: 10px; color: var(--text3); }
+  .squad-stats { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--text3); }
+  .runner {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 12px;
+  }
+  .runner:last-child { border-bottom: none; }
+  .rnum {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--border2); display: flex; align-items: center;
+    justify-content: center; font-size: 9px; font-weight: 700;
+    flex-shrink: 0; color: var(--text2); font-family: var(--mono);
+  }
+  .pname { font-weight: 600; min-width: 100px; }
+  .runner-pb { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--text3); }
+
+  /* ── TROFEI BAR ── */
+  .tbar {
+    display: inline-block; width: 48px; height: 4px;
+    background: var(--border); border-radius: 2px; vertical-align: middle; overflow: hidden;
+  }
+  .tbar-fill { height: 100%; background: var(--gold); border-radius: 2px; }
+
+  /* ── SECTION HEAD ── */
+  .section-head {
+    font-size: 10px; font-weight: 700; color: var(--royal);
+    letter-spacing: 1px; text-transform: uppercase;
+    margin: 18px 0 10px; padding-bottom: 6px;
+    border-bottom: 2px solid var(--royallt);
+    font-family: var(--mono);
+  }
+
+  /* ── MODE BUTTONS ── */
+  .mode-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .mode-btn {
+    padding: 5px 14px; font-size: 11px; font-weight: 600; font-family: var(--font);
+    cursor: pointer; border: 1.5px solid var(--border2); border-radius: 20px;
+    background: var(--bg2); color: var(--text3); transition: all 0.15s;
+  }
+  .mode-btn:hover { color: var(--royal); border-color: var(--royal); }
+  .mode-btn.active { background: var(--royallt); border-color: var(--royal); color: var(--royal); }
+
+  /* ── ALERTS ── */
+  .alert { padding: 10px 14px; border-radius: var(--radius); font-size: 12px; margin-bottom: 12px; }
+  .a-warn { background: var(--orangelt); border: 1px solid #f0c090; color: var(--orange); }
+  .a-info { background: var(--skylt);    border: 1px solid #90ccf0; color: var(--sky); }
+
+  /* ── MSG TABLE ── */
+  .msg-table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: var(--mono); }
+  .msg-table th {
+    background: var(--royallt); font-size: 10px; font-weight: 700;
+    color: var(--royal); letter-spacing: 0.8px; text-transform: uppercase;
+    padding: 8px 12px; border: 1px solid var(--border2); text-align: left;
+  }
+  .msg-table td { padding: 7px 12px; border: 1px solid var(--border); vertical-align: middle; }
+  .msg-table tr:nth-child(even) td { background: var(--bg3); }
+
+  .disc-wrap { display: flex; gap: 4px; flex-wrap: wrap; }
+
+  .guide-step {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--bg3);
+  }
+  .guide-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--royallt); color: var(--royal);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; flex-shrink: 0;
+    font-family: var(--mono);
+  }
+  .guide-body { flex: 1; }
+  .guide-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+  .guide-body p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .guide-list { margin: 6px 0 0 16px; font-size: 13px; color: var(--text2); line-height: 2; }
+
+    font-size: 12px; font-family: var(--font); padding: 7px 12px;
+    border: 1.5px solid var(--border2); border-radius: var(--radius);
+    background: var(--bg2); color: var(--text); cursor: pointer;
+  }
+  select:focus { outline: none; border-color: var(--royal); }
+
+  @media(max-width:700px){
+    .grid2,.grid3 { grid-template-columns: 1fr; }
+    .container { padding: 12px; }
+    .tabs { gap: 0; }
+    .tab { font-size: 10px; padding: 8px 6px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <!-- Eagle SVG -->
+  <div class="eagle-wrap">
+    <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Wings -->
+      <path d="M19 22 C10 18, 2 20, 1 14 C4 16, 8 15, 12 17 C9 12, 5 10, 4 5 C8 9, 12 11, 14 16 C15 13, 14 9, 13 6 C16 10, 17 14, 17 18Z" fill="rgba(255,255,255,0.85)"/>
+      <path d="M19 22 C28 18, 36 20, 37 14 C34 16, 30 15, 26 17 C29 12, 33 10, 34 5 C30 9, 26 11, 24 16 C23 13, 24 9, 25 6 C22 10, 21 14, 21 18Z" fill="rgba(255,255,255,0.85)"/>
+      <!-- Body -->
+      <ellipse cx="19" cy="24" rx="5" ry="7" fill="white"/>
+      <!-- Head -->
+      <ellipse cx="19" cy="15" rx="4" ry="4" fill="white"/>
+      <!-- Beak -->
+      <path d="M19 17 L22 19 L19 19Z" fill="var(--gold)"/>
+      <!-- Eye -->
+      <circle cx="20.5" cy="14.5" r="1" fill="var(--royal2)"/>
+      <!-- Talons -->
+      <path d="M16 30 L14 34 M16 30 L15 34 M16 30 L17 34" stroke="var(--gold)" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M22 30 L20 34 M22 30 L22 34 M22 30 L24 34" stroke="var(--gold)" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="logo-text">
+    <div class="logo-name">AQUILE</div>
+    <div class="logo-sub">CC Optimizer</div>
+  </div>
+  <div class="league-badge" id="league-badge">DIAMOND AAA</div>
+  <div class="header-right" id="week-label">—</div>
+</div>
+
+<!-- APP -->
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('giorno')">📅 Giorno CC</button>
+    <button class="tab" onclick="showTab('messaggio')">📨 Messaggio</button>
+    <button class="tab" onclick="showTab('staffette')">🏃 Staffette</button>
+    <button class="tab" onclick="showTab('ranking')">📊 Ranking</button>
+    <button class="tab" onclick="showTab('guida')">❓ Guida</button>
+  </div>
+
+  <!-- TAB GIORNO -->
+  <div id="tab-giorno">
+    <div class="card">
+      <div class="card-title">Seleziona giorno</div>
+      <div class="day-bar">
+        <button class="day-btn active" onclick="setDay(1,this)">Lunedì</button>
+        <button class="day-btn" onclick="setDay(2,this)">Martedì</button>
+        <button class="day-btn" onclick="setDay(3,this)">Mercoledì</button>
+        <button class="day-btn" onclick="setDay(4,this)">Giovedì</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Obbligatorie del giorno</div>
+      <div id="obl-summary"></div>
+    </div>
+    <button class="btn btn-primary" onclick="calcola();showTab('messaggio')" style="margin-bottom:24px">
+      Calcola e genera messaggio →
+    </button>
+  </div>
+
+  <!-- TAB MESSAGGIO -->
+  <div id="tab-messaggio" style="display:none">
+    <div id="msg-content">
+      <p style="color:var(--text3);font-size:13px">Vai al tab "Giorno CC" e premi Calcola.</p>
+    </div>
+  </div>
+
+  <!-- TAB STAFFETTE -->
+  <div id="tab-staffette" style="display:none">
+    <div class="card">
+      <div class="card-title">Modalità composizione</div>
+      <div class="mode-bar">
+        <button class="mode-btn active" onclick="setStaffMode('serpentino',this)">Serpentino</button>
+        <button class="mode-btn" onclick="setStaffMode('topheavy',this)">Top-heavy</button>
+        <button class="mode-btn" onclick="setStaffMode('ottimizzato',this)">Bilanciato ottimale</button>
+      </div>
+      <p style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="mode-desc">Serpentino: A=1,6,7,12 · B=2,5,8,11 · C=3,4,9,10 · D=13-16</p>
+    </div>
+    <div class="grid2" id="staffette-content"></div>
+  </div>
+
+  <!-- TAB GUIDA -->
+  <div id="tab-guida" style="display:none">
+    <div class="card">
+      <div class="card-title">Come usare questo file</div>
+
+      <div class="guide-step">
+        <div class="guide-num">1</div>
+        <div class="guide-body">
+          <div class="guide-title">Seleziona il giorno — tab "Giorno CC"</div>
+          <p>Apri il tab <strong>Giorno CC</strong> e clicca il giorno della settimana corrente (Lunedì, Martedì, Mercoledì o Giovedì). La tabella mostra subito le discipline obbligatorie assegnate dal sistema ad ogni giocatore, con il loro rank colorato.</p>
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="guide-num">2</div>
+        <div class="guide-body">
+          <div class="guide-title">Calcola la distribuzione</div>
+          <p>Premi il pulsante blu <strong>"Calcola e genera messaggio"</strong>. L'app analizza i rank di tutta la squadra e suggerisce automaticamente le migliori discipline libere per i giocatori TOP, poi genera la guida per gli altri.</p>
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="guide-num">3</div>
+        <div class="guide-body">
+          <div class="guide-title">Leggi il messaggio — tab "Messaggio"</div>
+          <p>Trovi tre sezioni:</p>
+          <ul class="guide-list">
+            <li><span class="badge b-royal">Staffette</span> — le 4 griglie per 4×100 e 4×400, pronte da copiare</li>
+            <li><span class="badge b-top">TOP</span> — le due discipline libere consigliate per i giocatori forti</li>
+            <li><span class="badge b-gray">Altri</span> — 1ª scelta, 2ª scelta, discipline da evitare</li>
+          </ul>
+          <p style="margin-top:8px">In fondo alla pagina c'è il pulsante <strong>"Copia messaggio completo"</strong> — un click e hai tutto negli appunti, pronto per WhatsApp o Telegram.</p>
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="guide-num">4</div>
+        <div class="guide-body">
+          <div class="guide-title">Staffette — tab "Staffette"</div>
+          <p>Puoi scegliere tre modalità di composizione delle griglie:</p>
+          <ul class="guide-list">
+            <li><strong>Serpentino</strong> (default) — distribuisce la forza in modo equilibrato tra le griglie 1-3</li>
+            <li><strong>Top-heavy</strong> — mette i 4 migliori tutti in griglia 1, poi bilancia le altre</li>
+            <li><strong>Bilanciato ottimale</strong> — algoritmo che minimizza matematicamente lo scarto di forza</li>
+          </ul>
+          <p style="margin-top:8px">La <strong>Griglia 4</strong> è sempre il paracadute (rank 13-16). Le griglie 5 e 6 sono libere per chi resta.</p>
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="guide-num">5</div>
+        <div class="guide-body">
+          <div class="guide-title">Ranking — tab "Ranking"</div>
+          <p>Seleziona una disciplina dal menu a tendina per vedere l'ordine completo della squadra con rank CC, trofei e PB su 100m e 400m.</p>
+        </div>
+      </div>
+
+      <div class="guide-step" style="border-bottom:none;padding-bottom:0">
+        <div class="guide-num" style="background:var(--goldlt);color:var(--gold)">⚙</div>
+        <div class="guide-body">
+          <div class="guide-title">Aggiornamento settimanale</div>
+          <p>Il file si aggiorna ogni settimana. Ricevi la nuova versione con i rank attrezzatura, PB e obbligatorie già aggiornati — sostituisci semplicemente il file precedente con quello nuovo.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="card">
+      <div class="card-title">Come leggere i rank colorati</div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+        <div style="display:flex;align-items:center;gap:8px"><span class="rp r1">1</span><span style="font-size:12px;color:var(--text2)">Top 3 — punta sicura a punti</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="rp r2">5</span><span style="font-size:12px;color:var(--text2)">Top 4-6 — molto competitivo</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="rp r3">8</span><span style="font-size:12px;color:var(--text2)">Top 7-10 — possibile a punti</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="rp r4">15</span><span style="font-size:12px;color:var(--text2)">Oltre 10 — difficile fare punti</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB RANKING -->
+  <div id="tab-ranking" style="display:none">
+    <div class="card">
+      <div class="card-title">Ranking per disciplina</div>
+      <select id="disc-select" onchange="renderRankingTable()" style="margin-bottom:16px;width:220px">
+        <option value="">— scegli disciplina —</option>
+      </select>
+      <div id="ranking-table"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA — aggiorna questo blocco ogni settimana
+// ============================================================
+const WEEK_LABEL = 'CC Diamond AAA';
+const LEAGUE_LABEL = 'DIAMOND AAA';
+
+const DISCS=['100m','200m','400m','800m','1500m','5000m','10000m','Marathon','110H','400H','3000S','LJ','TJ','HJ','PV','SP','DT','HT','JT'];
+const GRP={'100m':'SR','200m':'SR','400m':'SR','800m':'MR','1500m':'MR','5000m':'LR','10000m':'LR','Marathon':'LR','110H':'H','400H':'H','3000S':'H','LJ':'J','TJ':'J','HJ':'J','PV':'J','SP':'T','DT':'T','HT':'T','JT':'T'};
+
+const RANKS={
+  "Alceste":     [9,9,10,17,18,16,16,14,21,21,20,15,15,15,15, 9,13, 8, 9],
+  "Ale":         [8,6, 3, 4, 5, 6, 6, 7, 6, 6, 5, 5, 5, 5, 5, 4, 4, 4, 4],
+  "Alessandro":  [22,21,22,22,22,16,16,14,20,20,20,17,17,17,17,21,21,21,21],
+  "AndreaH4U":   [11,11, 9,11,11,10,10,10,11,11,11,10,10,10,10,12,11,12,12],
+  "Angelo":      [19,19,19,20,20,16,16,14,21,21,20,21,21,21,21,22,22,22,22],
+  "Bocia":       [6, 8, 8,13,14,14,14,23,14,13,14, 8, 8, 7, 8,16,16,16,16],
+  "Cosmo":       [14,13,13, 9,10,16,16,14, 9, 9, 9,20,20,20,20,19,19,18,18],
+  "Dario":       [23,22,23,23,23,23,23,22,23,23,23,23,23,23,23,23,23,23,23],
+  "FORE":        [4, 4, 5, 3, 3, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3],
+  "Gianluca":    [14,18,14,14,14,12,12,12,14,13,13,18,18,18,18,18,18,18,18],
+  "Giuseppe":    [15,23,15,19,19, 9, 9, 9,18,17,17,16,16,16,16,18,18,18,18],
+  "Luporaf":     [13,14,13,18,12,16,16,14,16,19,17,18,18,18,18,14,14,14,15],
+  "Mancio90":    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2],
+  "Monzeee":     [17,16,17,14,15,11,11,11,15,15,15, 9, 9, 9, 9,17,17,17,17],
+  "Natan72":     [15,14,15,16,17,15,15,14, 8, 8, 8,19,18,18,18, 7, 7, 7, 8],
+  "Nini":        [7, 7, 7, 5, 6, 7, 7, 6, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 7],
+  "Nonno81":     [21,19,21, 6, 7,12,12,12,18,17,17,13,13,13,13,10, 9, 9,10],
+  "Novy":        [20,18,20, 7, 8,21,21,20, 9, 9, 9, 7, 7, 7, 7,11,10,11,11],
+  "Rebelwaltz33":[3, 3, 4, 8, 4, 3, 3, 3, 5, 5, 7, 3, 3, 3, 3, 7, 8, 9, 5],
+  "Rioma":       [12,12,11,12,12, 8, 8, 8,13,14,13,14,14,14,14,15,15,15,14],
+  "SergioCosi":  [5, 5, 6,10, 9, 4, 4, 4, 3, 3, 3,11,11,11,11, 5, 5, 5, 6],
+  "TranceDz":    [10,10,12,15,16,22,22,21,12,12,12,22,22,22,22,13,12,13,13],
+  "Weima":       [17,16,17,21,21,13,13,13,17,16,16,12,12,12,12,20,20,20,20],
+  "Xgux":        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1]
+};
+
+const PB={
+  "Xgux":        {t:146446,p100:9.535,p400:43.189},
+  "Mancio90":    {t:145223,p100:9.500,p400:43.237},
+  "Rebelwaltz33":{t:132578,p100:9.555,p400:43.666},
+  "FORE":        {t:132134,p100:9.665,p400:44.026},
+  "Ale":         {t:126996,p100:9.688,p400:44.159},
+  "SergioCosi":  {t:121615,p100:9.672,p400:43.894},
+  "Nini":        {t:120831,p100:9.899,p400:44.465},
+  "Bocia":       {t:117848,p100:9.694,p400:44.155},
+  "Nonno81":     {t:114645,p100:10.133,p400:45.546},
+  "Novy":        {t:113958,p100:10.232,p400:45.404},
+  "AndreaH4U":   {t:110549,p100:10.074,p400:44.952},
+  "Alceste":     {t:109608,p100:9.917, p400:45.161},
+  "Rioma":       {t:109534,p100:10.108,p400:45.046},
+  "Monzeee":     {t:108619,p100:10.147,p400:45.139},
+  "Weima":       {t:108405,p100:10.225,p400:45.364},
+  "Natan72":     {t:107382,p100:10.084,p400:45.307},
+  "Giuseppe":    {t:107361,p100:10.102,p400:45.243},
+  "Cosmo":       {t:107287,p100:10.065,p400:45.163},
+  "Gianluca":    {t:106864,p100:10.108,p400:45.062},
+  "TranceDz":    {t:104781,p100:10.112,p400:45.013},
+  "Luporaf":     {t:104134,p100:10.180,p400:45.165},
+  "Alessandro":  {t:102735,p100:10.201,p400:45.657},
+  "Angelo":      {t:102531,p100:10.189,p400:45.526},
+  "Dario":       {t:91805, p100:10.546,p400:46.557}
+};
+
+const OBL={
+  1:{"Alceste":["100m","LJ"],"Ale":["100m","HT"],"Alessandro":["200m","1500m"],"AndreaH4U":["200m","PV"],"Angelo":["400H","LJ"],"Bocia":["100m","400m"],"Cosmo":["400m","5000m"],"Dario":["200m","Marathon"],"FORE":["Marathon","3000S"],"Gianluca":["Marathon","LJ"],"Giuseppe":["1500m","110H"],"Luporaf":["200m","1500m"],"Mancio90":["400H","HT"],"Monzeee":["400m","HT"],"Natan72":["TJ","HT"],"Nini":["400H","DT"],"Nonno81":["LJ","HT"],"Novy":["400m","5000m"],"Rebelwaltz33":["800m","400H"],"Rioma":["10000m","110H"],"SergioCosi":["5000m","JT"],"TranceDz":["TJ","PV"],"Weima":["1500m","HJ"],"Xgux":["3000S","LJ"]},
+  2:{"Alceste":["PV","SP"],"Ale":["200m","HJ"],"Alessandro":["200m","1500m"],"AndreaH4U":["Marathon","LJ"],"Angelo":["1500m","LJ"],"Bocia":["3000S","TJ"],"Cosmo":["100m","SP"],"Dario":["10000m","DT"],"FORE":["800m","PV"],"Gianluca":["100m","800m"],"Giuseppe":["200m","3000S"],"Luporaf":["5000m","DT"],"Mancio90":["800m","3000S"],"Monzeee":["TJ","HJ"],"Natan72":["10000m","Marathon"],"Nini":["400m","400H"],"Nonno81":["100m","5000m"],"Novy":["1500m","HT"],"Rebelwaltz33":["5000m","TJ"],"Rioma":["100m","1500m"],"SergioCosi":["200m","10000m"],"TranceDz":["1500m","3000S"],"Weima":["400m","TJ"],"Xgux":["200m","110H"]},
+  3:{"Alceste":["400H","3000S"],"Ale":["800m","10000m"],"Alessandro":["400m","TJ"],"AndreaH4U":["Marathon","110H"],"Angelo":["100m","DT"],"Bocia":["110H","SP"],"Cosmo":["10000m","PV"],"Dario":["1500m","110H"],"FORE":["3000S","HJ"],"Gianluca":["100m","HT"],"Giuseppe":["3000S","SP"],"Luporaf":["100m","3000S"],"Mancio90":["5000m","JT"],"Monzeee":["HJ","SP"],"Natan72":["LJ","TJ"],"Nini":["SP","DT"],"Nonno81":["1500m","5000m"],"Novy":["10000m","PV"],"Rebelwaltz33":["3000S","JT"],"Rioma":["200m","Marathon"],"SergioCosi":["200m","LJ"],"TranceDz":["5000m","400H"],"Weima":["5000m","TJ"],"Xgux":["5000m","10000m"]},
+  4:{"Alceste":["100m","10000m"],"Ale":["10000m","HJ"],"Alessandro":["LJ","HJ"],"AndreaH4U":["Marathon","3000S"],"Angelo":["Marathon","DT"],"Bocia":["5000m","3000S"],"Cosmo":["400m","5000m"],"Dario":["400H","LJ"],"FORE":["5000m","10000m"],"Gianluca":["800m","LJ"],"Luporaf":["100m","PV"],"Mancio90":["HJ","SP"],"Monzeee":["100m","PV"],"Natan72":["100m","DT"],"Nini":["800m","HT"],"Nonno81":["200m","400H"],"Novy":["HJ","DT"],"Rebelwaltz33":["800m","LJ"],"Rioma":["Marathon","TJ"],"SergioCosi":["400H","JT"],"TranceDz":["100m","HT"],"Weima":["1500m","DT"],"Xgux":["100m","110H"]}
+};
+
+const TOP_NAMES = new Set(['Xgux','Mancio90','Rebelwaltz33','FORE','Ale','SergioCosi','Nini']);
+// ============================================================
+// END DATA
+// ============================================================
+
+const PLAYERS=Object.keys(RANKS).sort();
+const MAX_T=146446, MIN_T=91805;
+let currentDay=1, staffMode='serpentino';
+
+document.getElementById('week-label').textContent=WEEK_LABEL;
+document.getElementById('league-badge').textContent=LEAGUE_LABEL;
+
+function getRank(p,d){const i=DISCS.indexOf(d);return(i>=0&&RANKS[p])?RANKS[p][i]:null;}
+function rClass(r){if(!r||r>23)return 'r4';if(r<=3)return 'r1';if(r<=6)return 'r2';if(r<=10)return 'r3';return 'r4';}
+function rPill(p,d){const r=getRank(p,d);return `<span class="rp ${rClass(r)}">${r||'—'}</span>`;}
+function isEst(p){return p==='Gianluca';}
+function tbar(p){const pb=PB[p];if(!pb)return '';const pct=Math.round((pb.t-MIN_T)/(MAX_T-MIN_T)*100);return `<div class="tbar"><div class="tbar-fill" style="width:${pct}%"></div></div>`;}
+
+function showTab(t){
+  ['giorno','messaggio','staffette','ranking','guida'].forEach(n=>document.getElementById('tab-'+n).style.display='none');
+  document.getElementById('tab-'+t).style.display='block';
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['giorno','messaggio','staffette','ranking','guida'][i]===t));
+  if(t==='staffette') renderStaffette();
+  if(t==='ranking') populateDiscSelect();
+}
+function setDay(d,btn){currentDay=d;document.querySelectorAll('.day-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderOblSummary();}
+function setStaffMode(m,btn){
+  staffMode=m;document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  const d={serpentino:'Serpentino: A=1,6,7,12 · B=2,5,8,11 · C=3,4,9,10 · D=13-16',topheavy:'Top-heavy: A=top 4, poi serpentino B/C · D=13-16',ottimizzato:'Bilanciato ottimale: minimizza lo scarto Σrank tra le 3 griglie'};
+  document.getElementById('mode-desc').textContent=d[m];renderStaffette();
+}
+
+function renderOblSummary(){
+  const obl=OBL[currentDay]||{};
+  let h='<table><thead><tr><th>Giocatore</th><th>Livello</th><th>Obl 1</th><th>Rank</th><th>Obl 2</th><th>Rank</th></tr></thead><tbody>';
+  for(const p of PLAYERS){
+    const ds=obl[p]||[];
+    const est=isEst(p)?` <span class="badge b-est">est.</span>`:'';
+    h+=`<tr>
+      <td class="pname">${p}${est}</td>
+      <td>${TOP_NAMES.has(p)?'<span class="badge b-top">TOP</span>':'<span class="badge b-gray">—</span>'}</td>
+      <td>${ds[0]?`<span class="badge b-obl">${ds[0]}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+      <td>${ds[0]?rPill(p,ds[0]):'—'}</td>
+      <td>${ds[1]?`<span class="badge b-obl">${ds[1]}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+      <td>${ds[1]?rPill(p,ds[1]):'—'}</td>
+    </tr>`;
+  }
+  document.getElementById('obl-summary').innerHTML=h+'</tbody></table>';
+}
+
+function buildAltriGuidance(obl,topLibere){
+  const altri=PLAYERS.filter(p=>!TOP_NAMES.has(p)&&(obl[p]||[]).length>0);
+  const oblCount={};DISCS.forEach(d=>oblCount[d]=0);
+  for(const p of PLAYERS) for(const d of(obl[p]||[])) oblCount[d]=(oblCount[d]||0)+1;
+  const topCount={};DISCS.forEach(d=>topCount[d]=oblCount[d]||0);
+  for(const p of PLAYERS) if(TOP_NAMES.has(p)) for(const d of(topLibere[p]||[])) topCount[d]=(topCount[d]||0)+1;
+  const pref1=[],pref2=[],avoid=[];
+  for(const d of DISCS){
+    const oblP=PLAYERS.filter(p=>(obl[p]||[]).includes(d));
+    const altriEl=altri.filter(p=>!(obl[p]||[]).includes(d));
+    const bestR=altriEl.length?Math.min(...altriEl.map(p=>getRank(p,d)||99)):99;
+    const weakObl=oblP.filter(p=>(getRank(p,d)||99)>12).length;
+    const room=Math.max(0,3-oblCount[d])+weakObl;
+    if(topCount[d]>=5||bestR>20) avoid.push(d);
+    else if(room>=2&&bestR<=14) pref1.push(d);
+    else if(room>=1&&bestR<=17) pref2.push(d);
+    else avoid.push(d);
+  }
+  return{pref1,pref2,avoid};
+}
+
+function pts(rank){if(!rank||rank>30)return 0;return Math.max(0,124-rank*4);}
+
+function marginalGain(playerRank, discRanks){
+  // discRanks: current ranks already assigned to this discipline
+  const top3=discRanks.slice().sort((a,b)=>a-b).slice(0,3);
+  const pr=playerRank;
+  if(top3.length<3){
+    const newTop3=[...top3,pr].sort((a,b)=>a-b).slice(0,3);
+    return newTop3.reduce((s,r)=>s+pts(r),0)-top3.reduce((s,r)=>s+pts(r),0);
+  } else {
+    const worst=Math.max(...top3);
+    if(pr<worst){
+      const newTop3=top3.filter(r=>r!==worst).concat(pr).sort((a,b)=>a-b).slice(0,3);
+      return newTop3.reduce((s,r)=>s+pts(r),0)-top3.reduce((s,r)=>s+pts(r),0);
+    }
+    return 0;
+  }
+}
+
+function calcola(){
+  const obl=OBL[currentDay]||{};
+
+  // Build initial disc state from obbligatorie
+  const discState={};
+  DISCS.forEach(d=>discState[d]=[]);
+  for(const p of PLAYERS)
+    for(const d of(obl[p]||[])){const r=getRank(p,d);if(r)discState[d].push(r);}
+
+  // Greedy marginal gain: iteratively pick best (player, disc) by point gain
+  const libere={};PLAYERS.forEach(p=>libere[p]=[]);
+  const pSlots={};PLAYERS.forEach(p=>pSlots[p]=2);
+
+  for(let iter=0;iter<PLAYERS.length*2;iter++){
+    let bestGain=-1,bestP=null,bestD=null;
+    for(const p of PLAYERS){
+      if(pSlots[p]<=0) continue;
+      const occ=new Set([...(obl[p]||[]),...libere[p]]);
+      for(const d of DISCS){
+        if(occ.has(d)) continue;
+        const r=getRank(p,d);if(!r) continue;
+        const gain=marginalGain(r,discState[d]);
+        if(gain>bestGain||(gain===bestGain&&bestP&&r<(getRank(bestP,bestD)||99))){
+          bestGain=gain;bestP=p;bestD=d;
+        }
+      }
+    }
+    if(bestGain<=0||!bestP) break;
+    libere[bestP].push(bestD);
+    pSlots[bestP]--;
+    discState[bestD].push(getRank(bestP,bestD));
+  }
+
+  // Rebuild discCount for coverage display
+  const discCount={};DISCS.forEach(d=>discCount[d]=discState[d].length);
+
+  const topLibere={};
+  for(const p of PLAYERS) if(TOP_NAMES.has(p)) topLibere[p]=libere[p]||[];
+  const needsReinf=new Set(); // no longer needed separately, gain handles it
+  renderMessaggio(obl,libere,discCount,needsReinf,buildAltriGuidance(obl,topLibere));
+}
+
+function renderMessaggio(obl,libere,discCount,needsReinf,altriGuide){
+  const dayIT={1:'LUNEDÌ',2:'MARTEDÌ',3:'MERCOLEDÌ',4:'GIOVEDÌ'};
+  const dayEN={1:'MONDAY',2:'TUESDAY',3:'WEDNESDAY',4:'THURSDAY'};
+  const s100=buildSquads('100m',staffMode), s400=buildSquads('400m',staffMode);
+  const ords=['1st','2nd','3rd','4th'], keys=['A','B','C','D'];
+
+  let staffText='';
+  keys.forEach((k,i)=>{staffText+=`${ords[i]} Relay 4x100: ${(s100[k]||[]).map(p=>p.toUpperCase()).join(' ')}\n`;});
+  keys.forEach((k,i)=>{staffText+=`${ords[i]} Relay 4x400: ${(s400[k]||[]).map(p=>p.toUpperCase()).join(' ')}\n`;});
+  staffText+=`Quinta e Sesta a scelta libera / Fifth and Sixth relay free choice.`;
+
+  const topPlayers=PLAYERS.filter(p=>TOP_NAMES.has(p)&&(obl[p]||[]).length>0);
+  const{pref1,pref2,avoid}=altriGuide;
+  const topLines=topPlayers.map(p=>`${p}: ${(libere[p]||[]).join(' + ')||'—'}`).join('\n');
+  const altriText=`1ª scelta: ${pref1.join(' / ')||'—'}\n2ª scelta: ${pref2.join(' / ')||'—'}\nEvitare: ${avoid.join(' / ')||'—'}`;
+  const fullMsg=`DAY ${currentDay} – ${dayIT[currentDay]} / ${dayEN[currentDay]}\n\n📌 STAFFETTE:\n${staffText}\n\n🏃 LIBERE — TOP:\n${topLines}\n\nALTRI — se serve adattare:\n${altriText}`;
+
+  // Staffette table rows
+  let sRows100='', sRows400='';
+  keys.forEach((k,i)=>{
+    sRows100+=`<tr><td style="color:var(--text3);font-weight:700;width:40px">${ords[i].toUpperCase()}</td><td>${(s100[k]||[]).map(p=>p.toUpperCase()).join(' · ')}</td></tr>`;
+    sRows400+=`<tr><td style="color:var(--text3);font-weight:700;width:40px">${ords[i].toUpperCase()}</td><td>${(s400[k]||[]).map(p=>p.toUpperCase()).join(' · ')}</td></tr>`;
+  });
+
+  let h=`<div class="card">
+    <div class="card-title">DAY ${currentDay} — ${dayIT[currentDay]} / ${dayEN[currentDay]}</div>
+
+    <div class="section-head">📌 Staffette</div>
+    <div class="grid2" style="margin-bottom:10px">
+      <div><table class="msg-table"><thead><tr><th colspan="2">4×100m</th></tr></thead><tbody>${sRows100}</tbody></table></div>
+      <div><table class="msg-table"><thead><tr><th colspan="2">4×400m</th></tr></thead><tbody>${sRows400}</tbody></table></div>
+    </div>
+    <p style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:14px">Quinta e Sesta a scelta libera per i rimanenti / Fifth and Sixth relay free choice.</p>
+
+    <div class="section-head">🏃 Libere — TOP</div>
+    <table class="msg-table" style="margin-bottom:14px">
+      <thead><tr><th>Giocatore</th><th>1ª libera</th><th>Rank</th><th>2ª libera</th><th>Rank</th></tr></thead>
+      <tbody>`;
+  for(const p of topPlayers){
+    const libs=libere[p]||[];
+    const est=isEst(p)?` <span class="badge b-est" style="font-size:9px">est.</span>`:'';
+    h+=`<tr><td class="pname">${p}${est}</td>
+      <td>${libs[0]?`<span class="badge b-lib">${libs[0]}</span>`:'—'}</td>
+      <td>${libs[0]?rPill(p,libs[0]):'—'}</td>
+      <td>${libs[1]?`<span class="badge b-lib">${libs[1]}</span>`:'—'}</td>
+      <td>${libs[1]?rPill(p,libs[1]):'—'}</td>
+    </tr>`;
+  }
+  h+=`</tbody></table>
+
+    <div class="section-head">👥 Altri — se serve adattare</div>
+    <div class="grid3" style="margin-bottom:16px">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--green);margin-bottom:8px;letter-spacing:.5px;font-family:var(--mono)">1ª SCELTA</div>
+        <div class="disc-wrap">${pref1.map(d=>`<span class="badge b-lib">${d}</span>`).join(' ')||'<span style="color:var(--text3)">—</span>'}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--orange);margin-bottom:8px;letter-spacing:.5px;font-family:var(--mono)">2ª SCELTA</div>
+        <div class="disc-wrap">${pref2.map(d=>`<span class="badge b-rif">${d}</span>`).join(' ')||'<span style="color:var(--text3)">—</span>'}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--text3);margin-bottom:8px;letter-spacing:.5px;font-family:var(--mono)">EVITARE</div>
+        <div class="disc-wrap">${avoid.map(d=>`<span class="badge b-gray">${d}</span>`).join(' ')||'<span style="color:var(--text3)">—</span>'}</div>
+      </div>
+    </div>
+
+    <button class="btn btn-copy" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(fullMsg)}')).then(()=>alert('Messaggio copiato negli appunti!'))">
+      📋 Copia messaggio completo
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Copertura discipline</div>
+    <table><thead><tr><th>Disciplina</th><th>Gruppo</th><th>N</th><th>Top rank</th><th>Stato</th></tr></thead><tbody>`;
+
+  for(const d of DISCS){
+    const cnt=discCount[d]||0;
+    const allP=PLAYERS.filter(p=>[...(obl[p]||[]),...(libere[p]||[])].includes(d));
+    const best=allP.length?Math.min(...allP.map(p=>getRank(p,d)||99)):null;
+    let badge='';
+    if(!cnt) badge=`<span class="badge b-err">Scoperta</span>`;
+    else if(cnt>3) badge=`<span class="badge b-warn">Sovraffollata</span>`;
+    else if(best&&best<=3) badge=`<span class="badge b-lib">Eccellente</span>`;
+    else if(best&&best<=6) badge=`<span class="badge b-obl">Buona</span>`;
+    else if(needsReinf.has(d)) badge=`<span class="badge b-rif">Rinforzata ★</span>`;
+    else badge=`<span class="badge b-gray">OK</span>`;
+    h+=`<tr><td style="font-weight:600">${d}</td><td><span class="badge b-royal">${GRP[d]}</span></td><td>${cnt}</td><td>${best?`<span class="rp ${rClass(best)}">${best}</span>`:'—'}</td><td>${badge}</td></tr>`;
+  }
+  h+=`</tbody></table></div>`;
+  document.getElementById('msg-content').innerHTML=h;
+}
+
+function buildSquads(disc,mode){
+  const ranked=PLAYERS.map(p=>({p,r:getRank(p,disc)||99})).sort((a,b)=>a.r-b.r);
+  const squads={A:[],B:[],C:[],D:ranked.slice(12,16).map(x=>x.p)};
+  const pool=ranked.slice(0,12);
+  if(mode==='ottimizzato'){
+    const sums={A:0,B:0,C:0};
+    for(const{p,r}of pool){const k=['A','B','C'].reduce((a,b)=>sums[a]<=sums[b]?a:b);squads[k].push(p);sums[k]+=r;}
+  }else if(mode==='topheavy'){
+    squads.A=pool.slice(0,4).map(x=>x.p);
+    const rest=pool.slice(4);
+    const o=[['B','C'],['C','B'],['B','C'],['C','B']];
+    for(let i=0;i<rest.length;i++)squads[o[Math.floor(i/2)][i%2]].push(rest[i].p);
+  }else{
+    const o=[['A','B','C'],['C','B','A'],['A','B','C'],['C','B','A']];
+    for(let r=0;r<4;r++)for(let j=0;j<3;j++){const idx=r*3+j;if(idx<pool.length)squads[o[r][j]].push(pool[idx].p);}
+  }
+  const used=new Set([...squads.A,...squads.B,...squads.C,...squads.D]);
+  const free=ranked.filter(x=>!used.has(x.p)).map(x=>x.p);
+  squads.E=free.slice(0,4);squads.F=free.slice(4);
+  return squads;
+}
+
+function renderStaffette(){
+  let h='';
+  for(const disc of['100m','400m']){
+    const pbKey=disc==='100m'?'p100':'p400';
+    const squads=buildSquads(disc,staffMode);
+    h+=`<div class="card"><div class="card-title">${disc==='100m'?'Staffetta 4×100m':'Staffetta 4×400m'}</div>`;
+    [['A','Griglia 1','sq-a','punta a punti'],['B','Griglia 2','sq-b','punta a punti'],['C','Griglia 3','sq-c','punta a punti'],['D','Griglia 4','sq-d','paracadute'],['E','Griglia 5','sq-x','libera'],['F','Griglia 6','sq-x','libera']].forEach(([k,lbl,cls,note])=>{
+      const m=squads[k]||[];if(!m.length)return;
+      const sum=m.reduce((s,p)=>s+(getRank(p,disc)||99),0);
+      const pbt=m.reduce((s,p)=>s+(PB[p]?PB[p][pbKey]:0),0);
+      const sorted=[...m].sort((a,b)=>(PB[b]?PB[b][pbKey]:99)-(PB[a]?PB[a][pbKey]:99));
+      h+=`<div class="squad-card ${cls}">
+        <div class="squad-header">
+          <span class="squad-label">${lbl}</span>
+          <span class="badge b-gray" style="font-size:10px">${note}</span>
+          <span class="squad-stats">Σ${sum} · ${pbt.toFixed(2)}s</span>
+        </div>`;
+      sorted.forEach((p,i)=>{
+        const est=isEst(p)?` <span class="badge b-est" style="font-size:9px">est.</span>`:'';
+        h+=`<div class="runner"><span class="rnum">${i+1}</span><span class="pname">${p}${est}</span><span class="runner-pb">${PB[p]?PB[p][pbKey]+'s':''} ${rPill(p,disc)}</span></div>`;
+      });
+      h+=`</div>`;
+    });
+    h+=`</div>`;
+  }
+  document.getElementById('staffette-content').innerHTML=h;
+}
+
+function populateDiscSelect(){
+  const sel=document.getElementById('disc-select');
+  if(sel.options.length>1)return;
+  DISCS.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
+}
+
+function renderRankingTable(){
+  const disc=document.getElementById('disc-select').value;
+  if(!disc){document.getElementById('ranking-table').innerHTML='';return;}
+  const sorted=PLAYERS.map(p=>({p,r:getRank(p,disc)})).filter(x=>x.r!=null).sort((a,b)=>a.r-b.r);
+  let h=`<table><thead><tr><th>#</th><th>Giocatore</th><th>Rank CC</th><th>Trofei</th><th>PB 100m</th><th>PB 400m</th></tr></thead><tbody>`;
+  sorted.forEach(({p,r},i)=>{
+    const pb=PB[p];
+    const est=isEst(p)?` <span class="badge b-est" style="font-size:9px">est.</span>`:'';
+    const top=TOP_NAMES.has(p)?` <span class="badge b-top" style="font-size:9px">TOP</span>`:'';
+    h+=`<tr><td style="font-family:var(--mono);color:var(--text3);font-weight:600">${i+1}</td>
+      <td class="pname">${p}${est}${top}</td>
+      <td><span class="rp ${rClass(r)}">${r}</span></td>
+      <td>${pb?`<span style="font-family:var(--mono);font-size:11px;color:var(--text2)">${(pb.t/1000).toFixed(0)}k</span> ${tbar(p)}`:'—'}</td>
+      <td style="font-family:var(--mono);color:var(--text2)">${pb?pb.p100+'s':'—'}</td>
+      <td style="font-family:var(--mono);color:var(--text2)">${pb?pb.p400+'s':'—'}</td>
+    </tr>`;
+  });
+  document.getElementById('ranking-table').innerHTML=h+'</tbody></table>';
+}
+
+renderOblSummary();
+</script>
+</body>
+</html>
