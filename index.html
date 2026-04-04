@@ -937,7 +937,10 @@ async function saveRanking(){
   const targetPlayer=isAdmin&&adminActingAs?adminActingAs:currentUser.id;
   const msg=document.getElementById('rank-save-msg');
 
+  // Parte dai dati già salvati per non sovrascrivere con null
+  const existing=rankings[targetPlayer]||{};
   const data={
+    ...existing,
     week_id:weekData.id, player_id:targetPlayer,
     updated_at:new Date().toISOString()
   };
@@ -957,8 +960,11 @@ async function saveRanking(){
   });
 
   try{
-    await sbUpsert('aquile_rankings',data);
-    rankings[targetPlayer]={...rankings[targetPlayer],...data};
+    await sb('aquile_rankings?on_conflict=week_id,player_id', {
+      method:'POST', body:JSON.stringify(data),
+      prefer:'resolution=merge-duplicates,return=representation'
+    });
+    rankings[targetPlayer]={...existing,...data};
     msg.style.display='inline';
     setTimeout(()=>msg.style.display='none',3000);
   }catch(e){
