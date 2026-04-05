@@ -869,7 +869,9 @@ function renderInsertTab(){
       </div>
     </div>`;
   });
-  h+=`</div>`;
+  h+=`  <button class="btn-primary-sm" onclick="saveGruppi()">Salva atleta / allenatore / centro</button>
+    <span id="gruppi-save-msg" style="margin-left:10px;font-size:12px;color:var(--green);display:none">✓ Salvato!</span>
+  </div>`;
 
   // Valore CC per disciplina (= valore mostrato dal gioco, già include tutto tranne allenatore)
   h+=`<div class="card">
@@ -915,10 +917,13 @@ async function saveObbligatorie(){
       const d1=document.getElementById(`obl_${day}_1`)?.value||null;
       const d2=document.getElementById(`obl_${day}_2`)?.value||null;
       if(d1||d2){
-        await sbUpsert('aquile_obbligatorie',{
-          week_id:weekData.id, player_id:targetPlayer,
-          day, disc_1:d1||null, disc_2:d2||null,
-          updated_at:new Date().toISOString()
+        await sb(`aquile_obbligatorie?on_conflict=week_id,player_id,day`, {
+          method:'POST', body:JSON.stringify({
+            week_id:weekData.id, player_id:targetPlayer,
+            day, disc_1:d1||null, disc_2:d2||null,
+            updated_at:new Date().toISOString()
+          }),
+          prefer:'resolution=merge-duplicates,return=representation'
         });
         if(!oblData[day]) oblData[day]={};
         oblData[day][targetPlayer]=[d1,d2].filter(Boolean);
@@ -932,28 +937,42 @@ async function saveObbligatorie(){
   }
 }
 
+async function saveGruppi(){
+  if(!weekData){alert('Nessuna settimana attiva trovata.');return;}
+  const targetPlayer=isAdmin&&adminActingAs?adminActingAs:currentUser.id;
+  const msg=document.getElementById('gruppi-save-msg');
+  const existing=rankings[targetPlayer]||{};
+  const data={...existing, week_id:weekData.id, player_id:targetPlayer, updated_at:new Date().toISOString()};
+
+  ['SR','MR','LR','H','J','T'].forEach(g=>{
+    const gk=g.toLowerCase();
+    const atl=parseInt(document.getElementById(`atl_${g}`)?.value)||null;
+    const coa=parseInt(document.getElementById(`coa_${g}`)?.value)||null;
+    const cen=parseInt(document.getElementById(`cen_${g}`)?.value)||null;
+    if(atl!==null) data[`athlete_${gk}`]=atl;
+    if(coa!==null) data[`coach_${gk}`]=coa;
+    if(cen!==null) data[`center_${gk}`]=cen;
+  });
+
+  try{
+    await sb('aquile_rankings?on_conflict=week_id,player_id',{
+      method:'POST', body:JSON.stringify(data),
+      prefer:'resolution=merge-duplicates,return=representation'
+    });
+    rankings[targetPlayer]={...existing,...data};
+    msg.style.display='inline';
+    setTimeout(()=>msg.style.display='none',3000);
+  }catch(e){ alert('Errore nel salvataggio: '+e.message); }
+}
+
 async function saveRanking(){
   if(!weekData){alert('Nessuna settimana attiva trovata.');return;}
   const targetPlayer=isAdmin&&adminActingAs?adminActingAs:currentUser.id;
   const msg=document.getElementById('rank-save-msg');
-
-  // Parte dai dati già salvati per non sovrascrivere con null
   const existing=rankings[targetPlayer]||{};
-  const data={
-    ...existing,
-    week_id:weekData.id, player_id:targetPlayer,
-    updated_at:new Date().toISOString()
-  };
+  const data={...existing, week_id:weekData.id, player_id:targetPlayer, updated_at:new Date().toISOString()};
 
-  // Atleta, Allenatore, Centro per gruppo
-  ['SR','MR','LR','H','J','T'].forEach(g=>{
-    const gk=g.toLowerCase();
-    data[`athlete_${gk}`]=parseInt(document.getElementById(`atl_${g}`)?.value)||null;
-    data[`coach_${gk}`]  =parseInt(document.getElementById(`coa_${g}`)?.value)||null;
-    data[`center_${gk}`] =parseInt(document.getElementById(`cen_${g}`)?.value)||null;
-  });
-
-  // Gear per disciplina
+  // Solo i valori CC per disciplina
   DISCS.forEach(d=>{
     const col=DISC_TO_GEAR_COL[d];
     if(col) data[col]=parseInt(document.getElementById(`gear_${d}`)?.value)||null;
