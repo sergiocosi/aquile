@@ -251,11 +251,11 @@ select{font-size:16px}
       <div class="card">
         <div class="card-title">Modalità composizione</div>
         <div class="mode-bar">
-          <button class="mode-btn active" onclick="setStaffMode('serpentino',this)">Serpentino</button>
+          <button class="mode-btn active" onclick="setStaffMode('equilibrato',this)">Equilibrato</button>
           <button class="mode-btn" onclick="setStaffMode('topheavy',this)">Top-heavy</button>
           <button class="mode-btn" onclick="setStaffMode('ottimizzato',this)">Bilanciato ottimale</button>
         </div>
-        <p style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="mode-desc">Serpentino: A=1,6,7,12 · B=2,5,8,11 · C=3,4,9,10 · D=13-16</p>
+        <p style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="mode-desc">Equilibrato: A=1,6,7,12 · B=2,5,8,11 · C=3,4,9,10 · D=13-16</p>
       </div>
       <div class="grid2" id="staffette-content"></div>
     </div>
@@ -341,7 +341,7 @@ const TOP_NAMES=new Set(['Xgux','Mancio90','Rebelwaltz33','FORE','Ale','SergioCo
 let currentUser=null;
 let isAdmin=false;
 let currentDay=1;
-let staffMode='serpentino';
+let staffMode='equilibrato';
 let weekData=null;
 let allPlayers=[];
 let rankings={};   // player_id -> {score_100m, score_200m, ...}
@@ -521,7 +521,7 @@ function setStaffMode(m,btn){
   staffMode=m;
   document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  const d={serpentino:'Serpentino: A=1,6,7,12 · B=2,5,8,11 · C=3,4,9,10 · D=13-16',topheavy:'Top-heavy: A=top 4, poi serpentino B/C · D=13-16',ottimizzato:'Bilanciato ottimale: minimizza scarto Σscore tra le 3 griglie'};
+  const d={equilibrato:'Equilibrato: A=1,6,7,12 · B=2,5,8,11 · C=3,4,9,10 · D=13-16',topheavy:'Top-heavy: A=top 4, poi equilibrato B/C · D=13-16',ottimizzato:'Bilanciato ottimale: minimizza scarto Σscore tra le 3 griglie'};
   document.getElementById('mode-desc').textContent=d[m];
   renderStaffette();
 }
