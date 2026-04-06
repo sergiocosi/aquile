@@ -185,7 +185,8 @@ select{font-size:16px}
   <div class="header-right">
     <span class="user-chip" id="user-chip">—</span>
     <span class="admin-indicator" id="admin-badge" style="display:none">ADMIN</span>
-    <button class="btn-logout" onclick="logout()">Esci</button>
+    <button onclick="toggleLang()" id="lang-toggle" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer">🌐 EN</button>
+    <button class="btn-logout" onclick="logout()" id="btn-logout">Esci</button>
   </div>
 </div>
 
@@ -218,6 +219,7 @@ select{font-size:16px}
       <button class="tab" onclick="showTab('staffette')">🏃 Staffette</button>
       <button class="tab" onclick="showTab('ranking')">📊 Ranking</button>
       <button class="tab" onclick="showTab('inserisci')">✏️ I miei dati</button>
+      <button class="tab" onclick="showTab('trofei')">🏆 Trofei</button>
       <button class="tab" onclick="showTab('guida')">❓ Guida</button>
     </div>
 
@@ -251,11 +253,11 @@ select{font-size:16px}
       <div class="card">
         <div class="card-title">Modalità composizione</div>
         <div class="mode-bar">
-          <button class="mode-btn active" onclick="setStaffMode('equilibrato',this)">Equilibrato</button>
+          <button class="mode-btn active" onclick="setStaffMode('serpentino',this)">Serpentino</button>
           <button class="mode-btn" onclick="setStaffMode('topheavy',this)">Top-heavy</button>
           <button class="mode-btn" onclick="setStaffMode('ottimizzato',this)">Bilanciato ottimale</button>
         </div>
-        <p style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="mode-desc">Equilibrato: A=1,6,7,12 · B=2,5,8,11 · C=3,4,9,10 · D=13-16</p>
+        <p style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="mode-desc">Serpentino: A=1,6,7,12 · B=2,5,8,11 · C=3,4,9,10 · D=13-16</p>
       </div>
       <div class="grid2" id="staffette-content"></div>
     </div>
@@ -274,6 +276,11 @@ select{font-size:16px}
     <!-- TAB INSERISCI -->
     <div id="tab-inserisci" style="display:none">
       <div id="insert-content"></div>
+    </div>
+
+    <!-- TAB TROFEI -->
+    <div id="tab-trofei" style="display:none">
+      <div id="trofei-content"><div class="loading"><span class="spinner"></span>Caricamento...</div></div>
     </div>
 
     <!-- TAB GUIDA -->
@@ -331,8 +338,13 @@ const SUPABASE_URL = 'https://wkrkqkvswdwdjghfwebo.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indrcmtxa3Zzd2R3ZGpnaGZ3ZWJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2OTA3OTksImV4cCI6MjA4OTI2Njc5OX0.hBgyybr8i2GPG9rFPsZGOsJ9EyWEBPbrcJ96ttkeRbI';
 
 const DISCS=['100m','200m','400m','800m','1500m','5000m','10000m','Marathon','110H','400H','3000S','LJ','TJ','HJ','PV','SP','DT','HT','JT'];
-const DL={'100m':'100m','200m':'200m','400m':'400m','800m':'800m','1500m':'1500m','5000m':'5000m','10000m':'10000m','Marathon':'Maratona','110H':'110H','400H':'400H','3000S':'3000S','LJ':'Lungo','TJ':'Triplo','HJ':'Alto','PV':'Asta','SP':'Peso','DT':'Disco','HT':'Martello','JT':'Giavellotto'};
+const DL={'100m':'100m','200m':'200m','400m':'400m','800m':'800m','1500m':'1500m','5000m':'5000m','10000m':'10000m','Marathon':'Maratona / Marathon','110H':'110H','400H':'400H','3000S':'3000S','LJ':'Lungo / LJ','TJ':'Triplo / TJ','HJ':'Alto / HJ','PV':'Asta / PV','SP':'Peso / SP','DT':'Disco / DT','HT':'Martello / HT','JT':'Giavellotto / JT'};
 const GRP={'100m':'SR','200m':'SR','400m':'SR','800m':'MR','1500m':'MR','5000m':'LR','10000m':'LR','Marathon':'LR','110H':'H','400H':'H','3000S':'H','LJ':'J','TJ':'J','HJ':'J','PV':'J','SP':'T','DT':'T','HT':'T','JT':'T'};
+let lang='it';
+const I18N={it:{tab_giorno:'📅 Giorno CC',tab_msg:'📨 Messaggio',tab_staff:'🏃 Staffette',tab_rank:'📊 Ranking',tab_insert:'✏️ I miei dati',tab_trofei:'🏆 Trofei',tab_guide:'❓ Guida',day1:'Lunedì',day2:'Martedì',day3:'Mercoledì',day4:'Giovedì',obl_day:'Obbligatorie del giorno',calc_btn:'Calcola e genera messaggio →',msg_empty:'Vai al tab "Giorno CC" e premi Calcola.',trofei_title:'Trofei & Trend settimanale',trofei_player:'Giocatore',trofei_pts:'Trofei',trofei_trend:'Trend',trofei_100:'Ultimo 100m',trofei_400:'Ultimo 400m',trofei_insert:'Inserisci dati trofei (solo admin)',trofei_save:'Salva trofei',trofei_no_data:'Nessun dato disponibile.',logout:'Esci',loading:'Caricamento...',error_conn:'Errore di connessione. Riprova.',error_pwd:'Password errata o giocatore non trovato.',error_sel:'Seleziona il tuo nome e inserisci la password.',saved:'✓ Salvato!',error_save:'Errore nel salvataggio: ',no_week:'Nessuna settimana attiva trovata.',admin_for:'Stai inserendo dati per:',obl_title:'Obbligatorie della settimana',obl_desc:'Inserisci le discipline obbligatorie assegnate ogni giorno.',gear_title:'Atleta 🔥, Allenatore 💧 e Centro 🏟 per gruppo',gear_desc:'Inserisci i valori che vedi nel gioco. Aggiorna solo quando fai un upgrade.',athlete:'Atleta 🔥',coach:'Allenatore 💧',center:'Centro 🏟',valcc_title:'Valore CC per disciplina',valcc_desc:'Il valore che vedi nel gioco per ogni disciplina (già include tutto tranne l\'allenatore). Si aggiorna ogni venerdì.',valcc_info:'💡 Ranking CC = Valore CC disciplina + Allenatore del gruppo',save_gear:'Salva atleta / allenatore / centro',save_att:'Salva attrezzatura'},en:{tab_giorno:'📅 CC Day',tab_msg:'📨 Message',tab_staff:'🏃 Relays',tab_rank:'📊 Ranking',tab_insert:'✏️ My data',tab_trofei:'🏆 Trophies',tab_guide:'❓ Guide',day1:'Monday',day2:'Tuesday',day3:'Wednesday',day4:'Thursday',obl_day:'Mandatory events of the day',calc_btn:'Calculate & generate message →',msg_empty:'Go to "CC Day" tab and press Calculate.',trofei_title:'Trophies & Weekly trend',trofei_player:'Player',trofei_pts:'Trophies',trofei_trend:'Trend',trofei_100:'Last 100m',trofei_400:'Last 400m',trofei_insert:'Insert trophies data (admin only)',trofei_save:'Save trophies',trofei_no_data:'No data available.',logout:'Logout',loading:'Loading...',error_conn:'Connection error. Please retry.',error_pwd:'Wrong password or player not found.',error_sel:'Select your name and enter the password.',saved:'✓ Saved!',error_save:'Save error: ',no_week:'No active week found.',admin_for:'Inserting data for:',obl_title:'Weekly mandatory events',obl_desc:'Enter the mandatory events assigned each day.',gear_title:'Athlete 🔥, Coach 💧 & Training Centre 🏟 by group',gear_desc:'Enter values from the game. Update only when you upgrade.',athlete:'Athlete 🔥',coach:'Coach 💧',center:'Centre 🏟',valcc_title:'CC Value by event',valcc_desc:'The value shown in the game (already includes jersey+shorts+shoes+athlete+centre). Updated every Friday.',valcc_info:'💡 CC Ranking = CC Value (event) + Coach (group)',save_gear:'Save athlete / coach / centre',save_att:'Save equipment'}};
+function t(k){return(I18N[lang]||I18N.it)[k]||I18N.it[k]||k;}
+function toggleLang(){lang=lang==='it'?'en':'it';const btn=document.getElementById('lang-toggle');if(btn)btn.textContent=lang==='it'?'🌐 EN':'🌐 IT';refreshAllUI();}
+function refreshAllUI(){document.querySelectorAll('.tab').forEach((el,i)=>{const keys=['giorno','msg','staff','rank','insert','trofei','guide'];el.textContent=t('tab_'+keys[i]);});renderOblSummary();renderInsertTab();if(document.getElementById('tab-staffette').style.display!=='none')renderStaffette();if(document.getElementById('tab-ranking').style.display!=='none')renderRankingTable();if(document.getElementById('tab-trofei')&&document.getElementById('tab-trofei').style.display!=='none')renderTrofei();}
 const GRP_NAMES={'SR':'Sprint','MR':'Media dist.','LR':'Lunga dist.','H':'Ostacoli','J':'Salti','T':'Lanci'};
 // Gear column per disciplina nel DB
 const DISC_TO_GEAR_COL={'100m':'gear_100m','200m':'gear_200m','400m':'gear_400m','800m':'gear_800m','1500m':'gear_1500m','5000m':'gear_5000m','10000m':'gear_10000m','Marathon':'gear_marathon','110H':'gear_110h','400H':'gear_400h','3000S':'gear_3000s','LJ':'gear_lj','TJ':'gear_tj','HJ':'gear_hj','PV':'gear_pv','SP':'gear_sp','DT':'gear_dt','HT':'gear_ht','JT':'gear_jt'};
@@ -341,12 +353,13 @@ const TOP_NAMES=new Set(['Xgux','Mancio90','Rebelwaltz33','FORE','Ale','SergioCo
 let currentUser=null;
 let isAdmin=false;
 let currentDay=1;
-let staffMode='equilibrato';
+let staffMode='serpentino';
 let weekData=null;
 let allPlayers=[];
 let rankings={};   // player_id -> {score_100m, score_200m, ...}
 let oblData={};    // day -> player_id -> [disc1, disc2]
-let adminActingAs=null; // admin acting on behalf of player
+let adminActingAs=null;
+let trofeiData={current:{},previous:{}}; // week trophies
 
 // ── SUPABASE HELPERS ────────────────────────────────────────
 async function sb(path, opts={}) {
@@ -462,6 +475,21 @@ async function loadAllData() {
       if (!oblData[o.day]) oblData[o.day]={};
       oblData[o.day][o.player_id] = [o.disc_1, o.disc_2].filter(Boolean);
     });
+
+    // Load trofei (settimana corrente + precedente per trend)
+    const trofeiCurr = await sbGet('aquile_trofei', `select=*&week_id=eq.${weekData.id}`);
+    trofeiData.current = {};
+    (trofeiCurr||[]).forEach(r=>{ trofeiData.current[r.player_id]=r; });
+
+    // Settimana precedente
+    try {
+      const prevWeeks = await sbGet('aquile_weeks', `select=id&active=eq.false&order=id.desc&limit=1`);
+      if(prevWeeks && prevWeeks.length>0){
+        const trofeiPrev = await sbGet('aquile_trofei', `select=*&week_id=eq.${prevWeeks[0].id}`);
+        trofeiData.previous = {};
+        (trofeiPrev||[]).forEach(r=>{ trofeiData.previous[r.player_id]=r; });
+      }
+    } catch(e){} // OK se non c'è settimana precedente
   } catch(e) { console.error('Data load error:', e); }
 }
 
@@ -499,15 +527,16 @@ function rPill(p,d){const r=getRank(p,d);return `<span class="rp ${rClass(r)}">$
 
 // ── TABS ─────────────────────────────────────────────────────
 function showTab(t){
-  ['giorno','messaggio','staffette','ranking','inserisci','guida'].forEach(n=>{
+  ['giorno','messaggio','staffette','ranking','inserisci','trofei','guida'].forEach(n=>{
     document.getElementById('tab-'+n).style.display='none';
   });
   document.getElementById('tab-'+t).style.display='block';
   document.querySelectorAll('.tab').forEach((el,i)=>{
-    el.classList.toggle('active',['giorno','messaggio','staffette','ranking','inserisci','guida'][i]===t);
+    el.classList.toggle('active',['giorno','messaggio','staffette','ranking','inserisci','trofei','guida'][i]===t);
   });
   if(t==='staffette') renderStaffette();
   if(t==='ranking') renderRankingTable();
+  if(t==='trofei') renderTrofei();
 }
 
 function setDay(d,btn){
@@ -521,7 +550,7 @@ function setStaffMode(m,btn){
   staffMode=m;
   document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  const d={equilibrato:'Equilibrato: A=1,6,7,12 · B=2,5,8,11 · C=3,4,9,10 · D=13-16',topheavy:'Top-heavy: A=top 4, poi equilibrato B/C · D=13-16',ottimizzato:'Bilanciato ottimale: minimizza scarto Σscore tra le 3 griglie'};
+  const d={serpentino:'Serpentino: A=1,6,7,12 · B=2,5,8,11 · C=3,4,9,10 · D=13-16',topheavy:'Top-heavy: A=top 4, poi serpentino B/C · D=13-16',ottimizzato:'Bilanciato ottimale: minimizza scarto Σscore tra le 3 griglie'};
   document.getElementById('mode-desc').textContent=d[m];
   renderStaffette();
 }
@@ -988,6 +1017,142 @@ async function saveRanking(){
     setTimeout(()=>msg.style.display='none',3000);
   }catch(e){
     alert('Errore nel salvataggio: '+e.message);
+  }
+}
+
+// ── TROFEI ───────────────────────────────────────────────────
+function trendArrow(curr, prev, lowerBetter=false){
+  if(curr==null||prev==null||curr===''||prev==='') return '<span style="color:var(--text3)">→</span>';
+  const delta = parseFloat(curr) - parseFloat(prev);
+  const better = lowerBetter ? delta<0 : delta>0;
+  const same = Math.abs(delta)<0.001;
+  if(same) return `<span style="color:var(--text3)" title="0">→</span>`;
+  const arrow = better ? '▲' : '▼';
+  const col = better ? 'var(--green)' : 'var(--red)';
+  const sign = delta>0 ? '+' : '';
+  const fmt = Number.isInteger(parseFloat(curr)) ? Math.round(delta) : delta.toFixed(3);
+  return `<span style="color:${col};font-weight:700">${arrow} ${sign}${fmt}</span>`;
+}
+
+async function renderTrofei(){
+  const el = document.getElementById('trofei-content');
+  const hasCurrent = Object.keys(trofeiData.current).length > 0;
+
+  // ── Tabella visualizzazione ──────────────────────────────
+  let h=`<div class="card">
+    <div class="card-title">${t('trofei_title')} ${weekData?'— '+weekData.label:''}</div>`;
+
+  if(!hasCurrent){
+    h+=`<div class="alert a-warn">${t('trofei_no_data')}</div>`;
+  } else {
+    // Ordina per trofei decrescenti
+    const sorted = allPlayers
+      .filter(p=>trofeiData.current[p.id])
+      .sort((a,b)=>(trofeiData.current[b.id].trofei||0)-(trofeiData.current[a.id].trofei||0));
+
+    h+=`<div style="overflow-x:auto"><table>
+      <thead><tr>
+        <th>#</th>
+        <th>${t('trofei_player')}</th>
+        <th>${t('trofei_pts')}</th>
+        <th>${t('trofei_trend')}</th>
+        <th>${t('trofei_100')}</th>
+        <th>${t('trofei_trend')}</th>
+        <th>${t('trofei_400')}</th>
+        <th>${t('trofei_trend')}</th>
+      </tr></thead><tbody>`;
+
+    sorted.forEach((p,i)=>{
+      const cur = trofeiData.current[p.id]||{};
+      const prv = trofeiData.previous[p.id]||{};
+      const topBadge = TOP_NAMES.has(p.id)?` <span class="badge b-top" style="font-size:9px">TOP</span>`:'';
+      h+=`<tr>
+        <td style="font-family:var(--mono);color:var(--text3);font-weight:700">${i+1}</td>
+        <td style="font-weight:600">${p.name}${topBadge}</td>
+        <td style="font-family:var(--mono);font-weight:700">${cur.trofei!=null?cur.trofei.toLocaleString():'—'}</td>
+        <td>${trendArrow(cur.trofei,prv.trofei)}</td>
+        <td style="font-family:var(--mono)">${cur.best_100m||'—'}</td>
+        <td>${trendArrow(cur.best_100m,prv.best_100m,true)}</td>
+        <td style="font-family:var(--mono)">${cur.best_400m||'—'}</td>
+        <td>${trendArrow(cur.best_400m,prv.best_400m,true)}</td>
+      </tr>`;
+    });
+    h+=`</tbody></table></div>`;
+  }
+  h+=`</div>`;
+
+  // ── Form inserimento (solo admin) ────────────────────────
+  if(isAdmin){
+    h+=`<div class="card">
+      <div class="card-title">${t('trofei_insert')}</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px">
+        Inserisci i dati settimanali. I trend vengono calcolati automaticamente rispetto alla settimana precedente.
+      </p>
+      <div style="overflow-x:auto"><table>
+        <thead><tr>
+          <th style="min-width:120px">${t('trofei_player')}</th>
+          <th style="min-width:110px">${t('trofei_pts')}</th>
+          <th style="min-width:100px">${t('trofei_100')}</th>
+          <th style="min-width:100px">${t('trofei_400')}</th>
+        </tr></thead><tbody>`;
+
+    allPlayers.filter(p=>p.active!==false).forEach(p=>{
+      const cur = trofeiData.current[p.id]||{};
+      h+=`<tr>
+        <td style="font-weight:600">${p.name}</td>
+        <td><input type="number" id="tr_pts_${p.id}" value="${cur.trofei!=null?cur.trofei:''}"
+          style="width:100px;font-size:13px;padding:5px 8px;border:1.5px solid var(--border2);border-radius:6px"></td>
+        <td><input type="number" step="0.001" id="tr_100_${p.id}" value="${cur.best_100m||''}"
+          style="width:90px;font-size:13px;padding:5px 8px;border:1.5px solid var(--border2);border-radius:6px" placeholder="es. 9.663"></td>
+        <td><input type="number" step="0.001" id="tr_400_${p.id}" value="${cur.best_400m||''}"
+          style="width:90px;font-size:13px;padding:5px 8px;border:1.5px solid var(--border2);border-radius:6px" placeholder="es. 43.894"></td>
+      </tr>`;
+    });
+
+    h+=`</tbody></table></div>
+      <div style="margin-top:14px">
+        <button class="btn-primary-sm" onclick="saveTrofei()">${t('trofei_save')}</button>
+        <span id="trofei-save-msg" style="margin-left:10px;font-size:12px;color:var(--green);display:none">${t('saved')}</span>
+      </div>
+    </div>`;
+  }
+
+  el.innerHTML=h;
+}
+
+async function saveTrofei(){
+  if(!weekData){alert(t('no_week'));return;}
+  const msg=document.getElementById('trofei-save-msg');
+  const players=allPlayers.filter(p=>p.active!==false);
+  let saved=0;
+
+  for(const p of players){
+    const pts = document.getElementById(`tr_pts_${p.id}`)?.value;
+    const s100 = document.getElementById(`tr_100_${p.id}`)?.value;
+    const s400 = document.getElementById(`tr_400_${p.id}`)?.value;
+    if(!pts && !s100 && !s400) continue;
+
+    const data = {
+      week_id: weekData.id, player_id: p.id,
+      trofei: pts ? parseInt(pts) : null,
+      best_100m: s100 ? parseFloat(s100) : null,
+      best_400m: s400 ? parseFloat(s400) : null,
+      updated_at: new Date().toISOString()
+    };
+    try{
+      await sb('aquile_trofei?on_conflict=week_id,player_id',{
+        method:'POST', body:JSON.stringify(data),
+        prefer:'resolution=merge-duplicates,return=representation'
+      });
+      trofeiData.current[p.id]={...trofeiData.current[p.id],...data};
+      saved++;
+    }catch(e){ console.error('Trofei save error:', e); }
+  }
+
+  if(saved>0){
+    msg.style.display='inline';
+    setTimeout(()=>msg.style.display='none',3000);
+    renderTrofei();
   }
 }
 
