@@ -238,14 +238,16 @@ select{font-size:16px}
         <div class="card-title">Obbligatorie del giorno</div>
         <div id="obl-summary"><div class="loading"><span class="spinner"></span>Caricamento...</div></div>
       </div>
-      <button class="btn-primary-sm" onclick="calcola();showTab('messaggio')" style="margin-bottom:20px">
-        Calcola e genera messaggio →
-      </button>
+      <div id="admin-calcola-bar" style="display:none;margin-bottom:20px">
+        <button class="btn-primary-sm" onclick="calcola();showTab('messaggio')">
+          Calcola e genera messaggio →
+        </button>
+      </div>
     </div>
 
     <!-- TAB MESSAGGIO -->
     <div id="tab-messaggio" style="display:none">
-      <div id="msg-content"><p style="color:var(--text3);font-size:13px">Vai al tab "Giorno CC" e premi Calcola.</p></div>
+      <div id="msg-content"><div class="loading"><span class="spinner"></span>Caricamento...</div></div>
     </div>
 
     <!-- TAB STAFFETTE -->
@@ -360,6 +362,7 @@ let rankings={};   // player_id -> {score_100m, score_200m, ...}
 let oblData={};    // day -> player_id -> [disc1, disc2]
 let adminActingAs=null;
 let trofeiData={current:{},previous:{}}; // week trophies
+let messaggiData={};  // day -> {messaggio, staff_mode, published_by, published_at}
 
 // ── SUPABASE HELPERS ────────────────────────────────────────
 async function sb(path, opts={}) {
@@ -432,6 +435,7 @@ async function loginSuccess() {
   document.getElementById('app-screen').style.display='block';
   document.getElementById('user-chip').textContent=currentUser.name;
   if (isAdmin) document.getElementById('admin-badge').style.display='inline';
+  if (isAdmin) document.getElementById('admin-calcola-bar').style.display='block';
 
   await loadWeekData();
   await loadAllData();
@@ -475,6 +479,11 @@ async function loadAllData() {
       if (!oblData[o.day]) oblData[o.day]={};
       oblData[o.day][o.player_id] = [o.disc_1, o.disc_2].filter(Boolean);
     });
+
+    // Load messaggi pubblicati
+    const msgs = await sbGet('aquile_messaggi', `select=*&week_id=eq.${weekData.id}`);
+    messaggiData = {};
+    (msgs||[]).forEach(m=>{ messaggiData[m.day]=m; });
 
     // Load trofei (settimana corrente + precedente per trend)
     const trofeiCurr = await sbGet('aquile_trofei', `select=*&week_id=eq.${weekData.id}`);
@@ -537,6 +546,7 @@ function showTab(t){
   if(t==='staffette') renderStaffette();
   if(t==='ranking') renderRankingTable();
   if(t==='trofei') renderTrofei();
+  if(t==='messaggio') renderMessaggioTab();
 }
 
 function setDay(d,btn){
@@ -544,6 +554,7 @@ function setDay(d,btn){
   document.querySelectorAll('.day-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderOblSummary();
+  if(document.getElementById('tab-messaggio').style.display!=='none') renderMessaggioTab();
 }
 
 function setStaffMode(m,btn){
@@ -656,7 +667,81 @@ function buildAltriGuidance(obl,topLibere,players){
   return{pref1,pref2,avoid};
 }
 
-// ── MESSAGGIO ────────────────────────────────────────────────
+// ── MESSAGGIO TAB ────────────────────────────────────────────
+function renderMessaggioTab(){
+  const el=document.getElementById('msg-content');
+  if(!el) return;
+  if(isAdmin){
+    // Admin: mostra messaggio calcolato se c'è, altrimenti invito a calcolare
+    const saved=messaggiData[currentDay];
+    if(saved && saved.messaggio){
+      // Già pubblicato — mostra con opzione modifica
+      renderMessaggioPubblicato(saved);
+    } else {
+      el.innerHTML=`<div class="alert a-info">
+        Vai al tab "Giorno CC", seleziona il giorno e la modalità staffette, poi premi <strong>Calcola e genera messaggio →</strong>.
+      </div>`;
+    }
+  } else {
+    // Non-admin: mostra solo il messaggio pubblicato
+    const saved=messaggiData[currentDay];
+    if(saved && saved.messaggio){
+      renderMessaggioPubblicato(saved);
+    } else {
+      const dayIT={1:'Lunedì',2:'Martedì',3:'Mercoledì',4:'Giovedì'};
+      el.innerHTML=`<div class="alert a-warn" style="font-size:13px">
+        📋 Il messaggio per <strong>${dayIT[currentDay]}</strong> non è ancora stato pubblicato dall'admin. Controlla più tardi!
+      </div>`;
+    }
+  }
+}
+
+function renderMessaggioPubblicato(saved){
+  const el=document.getElementById('msg-content');
+  const ts=saved.published_at?new Date(saved.published_at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'';
+  const modeLabels={serpentino:'Serpentino',topheavy:'Top-heavy',ottimizzato:'Bilanciato ottimale'};
+  const modeLabel=modeLabels[saved.staff_mode]||saved.staff_mode;
+
+  let h=`<div class="alert a-success" style="margin-bottom:14px;font-size:12px">
+    ✅ Pubblicato da <strong>${saved.published_by||'admin'}</strong>${ts?' alle '+ts:''} — Staffette: <strong>${modeLabel}</strong>
+    ${isAdmin?`<button onclick="document.getElementById('msg-content').innerHTML='<div class=\\'alert a-info\\'>Ricalcola dal tab Giorno CC.</div>'" 
+      style="margin-left:12px;font-size:11px;padding:2px 8px;background:none;border:1px solid var(--green);border-radius:4px;cursor:pointer;color:var(--green)">Modifica</button>`:''}
+  </div>`;
+
+  // Messaggio formattato
+  h+=`<div class="card">
+    <div style="white-space:pre-wrap;font-family:var(--mono);font-size:12px;line-height:1.8;color:var(--text)">${saved.messaggio}</div>
+    <div style="margin-top:14px">
+      <button class="btn-copy" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(saved.messaggio)}')).then(()=>alert('Messaggio copiato!'))">
+        📋 Copia messaggio
+      </button>
+    </div>
+  </div>`;
+
+  el.innerHTML=h;
+}
+
+async function pubblicaMessaggio(msgText, staffMode){
+  if(!weekData) return;
+  try{
+    const data={
+      week_id:weekData.id, day:currentDay,
+      staff_mode:staffMode, messaggio:msgText,
+      published_by:currentUser.id,
+      published_at:new Date().toISOString(),
+      updated_at:new Date().toISOString()
+    };
+    await sb('aquile_messaggi?on_conflict=week_id,day',{
+      method:'POST', body:JSON.stringify(data),
+      prefer:'resolution=merge-duplicates,return=representation'
+    });
+    messaggiData[currentDay]=data;
+    return true;
+  }catch(e){
+    console.error('Pubblica error:',e);
+    return false;
+  }
+}
 function renderMessaggio(obl,libere,discCount,altriGuide){
   const dayIT={1:'LUNEDÌ',2:'MARTEDÌ',3:'MERCOLEDÌ',4:'GIOVEDÌ'};
   const dayEN={1:'MONDAY',2:'TUESDAY',3:'WEDNESDAY',4:'THURSDAY'};
@@ -709,6 +794,10 @@ function renderMessaggio(obl,libere,discCount,altriGuide){
       <div><div style="font-size:10px;font-weight:700;color:var(--text3);margin-bottom:6px;font-family:var(--mono)">EVITARE</div><div class="disc-wrap">${avoid.map(d=>`<span class="badge b-gray">${d}</span>`).join(' ')||'—'}</div></div>
     </div>
     <button class="btn-copy" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(fullMsg)}')).then(()=>alert('Messaggio copiato!'))">📋 Copia messaggio completo</button>
+    <button class="btn-primary-sm" style="margin-left:10px" onclick="pubblicaMessaggio(decodeURIComponent('${encodeURIComponent(fullMsg)}'),'${staffMode}').then(ok=>{if(ok){document.getElementById('pub-ok').style.display='inline';setTimeout(()=>document.getElementById('pub-ok').style.display='none',3000);}})">
+      🚀 Pubblica per tutti
+    </button>
+    <span id="pub-ok" style="display:none;margin-left:8px;font-size:12px;color:var(--green);font-weight:600">✅ Pubblicato!</span>
   </div>
 
   <div class="card">
