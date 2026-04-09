@@ -363,6 +363,7 @@ let oblData={};    // day -> player_id -> [disc1, disc2]
 let adminActingAs=null;
 let trofeiData={current:{},previous:{}}; // week trophies
 let messaggiData={};  // day -> {messaggio, staff_mode, published_by, published_at}
+let msgCalcolato={};  // day -> true se appena calcolato (non ancora pubblicato)
 
 // ── SUPABASE HELPERS ────────────────────────────────────────
 async function sb(path, opts={}) {
@@ -607,6 +608,7 @@ function marginalGain(playerRank,discRanks){
 function calcola(){
   const obl=oblData[currentDay]||{};
   const players=allPlayers.filter(p=>p.active!==false);
+  msgCalcolato[currentDay]=true; // flag: ho calcolato, non sovrascrivere
 
   const discState={};
   DISCS.forEach(d=>discState[d]=[]);
@@ -671,6 +673,8 @@ function buildAltriGuidance(obl,topLibere,players){
 function renderMessaggioTab(){
   const el=document.getElementById('msg-content');
   if(!el) return;
+  // Se l'admin ha appena calcolato (non ancora pubblicato), non sovrascrivere
+  if(isAdmin && msgCalcolato[currentDay]) return;
   if(isAdmin){
     // Admin: mostra messaggio calcolato se c'è, altrimenti invito a calcolare
     const saved=messaggiData[currentDay];
@@ -736,6 +740,7 @@ async function pubblicaMessaggio(msgText, staffMode){
       prefer:'resolution=merge-duplicates,return=representation'
     });
     messaggiData[currentDay]=data;
+    msgCalcolato[currentDay]=false; // ora mostra la versione pubblicata
     return true;
   }catch(e){
     console.error('Pubblica error:',e);
