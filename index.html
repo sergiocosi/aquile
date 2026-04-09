@@ -243,6 +243,11 @@ select{font-size:16px}
           Calcola e genera messaggio →
         </button>
       </div>
+      <div id="user-msg-bar" style="display:none;margin-bottom:20px">
+        <button class="btn-primary-sm" onclick="showTab('messaggio')">
+          📋 Messaggio del giorno →
+        </button>
+      </div>
     </div>
 
     <!-- TAB MESSAGGIO -->
@@ -437,6 +442,7 @@ async function loginSuccess() {
   document.getElementById('user-chip').textContent=currentUser.name;
   if (isAdmin) document.getElementById('admin-badge').style.display='inline';
   if (isAdmin) document.getElementById('admin-calcola-bar').style.display='block';
+  else document.getElementById('user-msg-bar').style.display='block';
 
   await loadWeekData();
   await loadAllData();
