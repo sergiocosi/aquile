@@ -260,7 +260,7 @@ select{font-size:16px}
       <div class="card">
         <div class="card-title">Modalità composizione</div>
         <div class="mode-bar">
-          <button class="mode-btn active" onclick="setStaffMode('serpentino',this)">Serpentino</button>
+          <button class="mode-btn active" onclick="setStaffMode('serpentino',this)">Equilibrate</button>
           <button class="mode-btn" onclick="setStaffMode('topheavy',this)">Top-heavy</button>
           <button class="mode-btn" onclick="setStaffMode('ottimizzato',this)">Bilanciato ottimale</button>
         </div>
@@ -348,7 +348,7 @@ const DISCS=['100m','200m','400m','800m','1500m','5000m','10000m','Marathon','11
 const DL={'100m':'100m','200m':'200m','400m':'400m','800m':'800m','1500m':'1500m','5000m':'5000m','10000m':'10000m','Marathon':'Maratona / Marathon','110H':'110H','400H':'400H','3000S':'3000S','LJ':'Lungo / LJ','TJ':'Triplo / TJ','HJ':'Alto / HJ','PV':'Asta / PV','SP':'Peso / SP','DT':'Disco / DT','HT':'Martello / HT','JT':'Giavellotto / JT'};
 const GRP={'100m':'SR','200m':'SR','400m':'SR','800m':'MR','1500m':'MR','5000m':'LR','10000m':'LR','Marathon':'LR','110H':'H','400H':'H','3000S':'H','LJ':'J','TJ':'J','HJ':'J','PV':'J','SP':'T','DT':'T','HT':'T','JT':'T'};
 let lang='it';
-const I18N={it:{tab_giorno:'📅 Giorno CC',tab_msg:'📨 Messaggio',tab_staff:'🏃 Staffette',tab_rank:'📊 Ranking',tab_insert:'✏️ I miei dati',tab_trofei:'🏆 Trofei',tab_guide:'❓ Guida',day1:'Lunedì',day2:'Martedì',day3:'Mercoledì',day4:'Giovedì',obl_day:'Obbligatorie del giorno',calc_btn:'Calcola e genera messaggio →',msg_empty:'Vai al tab "Giorno CC" e premi Calcola.',trofei_title:'Trofei & Trend settimanale',trofei_player:'Giocatore',trofei_pts:'Trofei',trofei_trend:'Trend',trofei_100:'Ultimo 100m',trofei_400:'Ultimo 400m',trofei_insert:'Inserisci dati trofei (solo admin)',trofei_save:'Salva trofei',trofei_no_data:'Nessun dato disponibile.',logout:'Esci',loading:'Caricamento...',error_conn:'Errore di connessione. Riprova.',error_pwd:'Password errata o giocatore non trovato.',error_sel:'Seleziona il tuo nome e inserisci la password.',saved:'✓ Salvato!',error_save:'Errore nel salvataggio: ',no_week:'Nessuna settimana attiva trovata.',admin_for:'Stai inserendo dati per:',obl_title:'Obbligatorie della settimana',obl_desc:'Inserisci le discipline obbligatorie assegnate ogni giorno.',gear_title:'Atleta 🔥, Allenatore 💧 e Centro 🏟 per gruppo',gear_desc:'Inserisci i valori che vedi nel gioco. Aggiorna solo quando fai un upgrade.',athlete:'Atleta 🔥',coach:'Allenatore 💧',center:'Centro 🏟',valcc_title:'Valore CC per disciplina',valcc_desc:'Il valore che vedi nel gioco per ogni disciplina (già include tutto tranne l\'allenatore). Si aggiorna ogni venerdì.',valcc_info:'💡 Ranking CC = Valore CC disciplina + Allenatore del gruppo',save_gear:'Salva atleta / allenatore / centro',save_att:'Salva attrezzatura'},en:{tab_giorno:'📅 CC Day',tab_msg:'📨 Message',tab_staff:'🏃 Relays',tab_rank:'📊 Ranking',tab_insert:'✏️ My data',tab_trofei:'🏆 Trophies',tab_guide:'❓ Guide',day1:'Monday',day2:'Tuesday',day3:'Wednesday',day4:'Thursday',obl_day:'Mandatory events of the day',calc_btn:'Calculate & generate message →',msg_empty:'Go to "CC Day" tab and press Calculate.',trofei_title:'Trophies & Weekly trend',trofei_player:'Player',trofei_pts:'Trophies',trofei_trend:'Trend',trofei_100:'Last 100m',trofei_400:'Last 400m',trofei_insert:'Insert trophies data (admin only)',trofei_save:'Save trophies',trofei_no_data:'No data available.',logout:'Logout',loading:'Loading...',error_conn:'Connection error. Please retry.',error_pwd:'Wrong password or player not found.',error_sel:'Select your name and enter the password.',saved:'✓ Saved!',error_save:'Save error: ',no_week:'No active week found.',admin_for:'Inserting data for:',obl_title:'Weekly mandatory events',obl_desc:'Enter the mandatory events assigned each day.',gear_title:'Athlete 🔥, Coach 💧 & Training Centre 🏟 by group',gear_desc:'Enter values from the game. Update only when you upgrade.',athlete:'Athlete 🔥',coach:'Coach 💧',center:'Centre 🏟',valcc_title:'CC Value by event',valcc_desc:'The value shown in the game (already includes jersey+shorts+shoes+athlete+centre). Updated every Friday.',valcc_info:'💡 CC Ranking = CC Value (event) + Coach (group)',save_gear:'Save athlete / coach / centre',save_att:'Save equipment'}};
+const I18N={it:{tab_giorno:'📅 Giorno CC',tab_msg:'📨 Messaggio',tab_staff:'🏃 Staffette',tab_rank:'📊 Ranking',tab_insert:'✏️ I miei dati',tab_trofei:'🏆 Trofei',tab_guide:'❓ Guida',day1:'Lunedì',day2:'Martedì',day3:'Mercoledì',day4:'Giovedì',obl_day:'Obbligatorie del giorno',calc_btn:'Calcola e genera messaggio →',msg_empty:'Vai al tab "Giorno CC" e premi Calcola.',trofei_title:'Trofei & Trend settimanale',trofei_player:'Giocatore',trofei_pts:'Trofei',trofei_trend:'Trend',trofei_100:'Ultimo 100m',trofei_400:'Ultimo 400m',trofei_insert:'Inserisci dati trofei (solo admin)',trofei_save:'Salva trofei',trofei_no_data:'Nessun dato disponibile.',logout:'Esci',loading:'Caricamento...',error_conn:'Errore di connessione. Riprova.',error_pwd:'Password errata o giocatore non trovato.',error_sel:'Seleziona il tuo nome e inserisci la password.',saved:'✓ Salvato!',error_save:'Errore nel salvataggio: ',no_week:'Nessuna settimana attiva trovata.',admin_for:'Stai inserendo dati per:',obl_title:'Obbligatorie della settimana',obl_desc:'Inserisci le discipline obbligatorie assegnate ogni giorno.',gear_title:'Atleta 🔥, Allenatore 💧 e Centro 🏟 per gruppo',gear_desc:'Inserisci i valori che vedi nel gioco. Aggiorna solo quando fai un upgrade.',athlete:'Atleta 🔥',coach:'Allenatore 💧',center:'Centro 🏟',valcc_title:'Valore CC per disciplina',valcc_desc:'Il valore che vedi nel gioco per ogni disciplina (già include tutto tranne l\'allenatore). Si aggiorna ogni venerdì.',valcc_info:'💡 Ranking CC = Valore CC disciplina + Allenatore del gruppo',save_gear:'Salva atleta / allenatore / centro',save_att:'Salva attrezzatura',mode_equil:'Equilibrate',mode_top:'Top-heavy',mode_bal:'Bilanciato ottimale',mode_desc_equil:'Equilibrate: A=1,6,7,12 · B=2,5,8,11 · C=3,4,9,10 · D=13-16',mode_desc_top:'Top-heavy: A=top 4, poi Equilibrate B/C · D=13-16',mode_desc_bal:'Bilanciato ottimale: minimizza scarto Σscore tra le 3 griglie',relay:'Griglia',relay_note1:'punta a punti',relay_note4:'paracadute',relay_free:'libera'},en:{tab_giorno:'📅 CC Day',tab_msg:'📨 Message',tab_staff:'🏃 Relays',tab_rank:'📊 Ranking',tab_insert:'✏️ My data',tab_trofei:'🏆 Trophies',tab_guide:'❓ Guide',day1:'Monday',day2:'Tuesday',day3:'Wednesday',day4:'Thursday',obl_day:'Mandatory events of the day',calc_btn:'Calculate & generate message →',msg_empty:'Go to "CC Day" tab and press Calculate.',trofei_title:'Trophies & Weekly trend',trofei_player:'Player',trofei_pts:'Trophies',trofei_trend:'Trend',trofei_100:'Last 100m',trofei_400:'Last 400m',trofei_insert:'Insert trophies data (admin only)',trofei_save:'Save trophies',trofei_no_data:'No data available.',logout:'Logout',loading:'Loading...',error_conn:'Connection error. Please retry.',error_pwd:'Wrong password or player not found.',error_sel:'Select your name and enter the password.',saved:'✓ Saved!',error_save:'Save error: ',no_week:'No active week found.',admin_for:'Inserting data for:',obl_title:'Weekly mandatory events',obl_desc:'Enter the mandatory events assigned each day.',gear_title:'Athlete 🔥, Coach 💧 & Training Centre 🏟 by group',gear_desc:'Enter values from the game. Update only when you upgrade.',athlete:'Athlete 🔥',coach:'Coach 💧',center:'Centre 🏟',valcc_title:'CC Value by event',valcc_desc:'The value shown in the game (already includes jersey+shorts+shoes+athlete+centre). Updated every Friday.',valcc_info:'💡 CC Ranking = CC Value (event) + Coach (group)',save_gear:'Save athlete / coach / centre',save_att:'Save equipment',mode_equil:'Balanced',mode_top:'Top-heavy',mode_bal:'Optimal balanced',mode_desc_equil:'Balanced: A=1,6,7,12 · B=2,5,8,11 · C=3,4,9,10 · D=13-16',mode_desc_top:'Top-heavy: A=top 4, then Balanced B/C · D=13-16',mode_desc_bal:'Optimal balanced: minimizes score gap between the 3 relays',relay:'Relay',relay_note1:'scoring',relay_note4:'safety',relay_free:'free'}};
 function t(k){return(I18N[lang]||I18N.it)[k]||I18N.it[k]||k;}
 function toggleLang(){lang=lang==='it'?'en':'it';const btn=document.getElementById('lang-toggle');if(btn)btn.textContent=lang==='it'?'🌐 EN':'🌐 IT';refreshAllUI();}
 function refreshAllUI(){document.querySelectorAll('.tab').forEach((el,i)=>{const keys=['giorno','msg','staff','rank','insert','trofei','guide'];el.textContent=t('tab_'+keys[i]);});renderOblSummary();renderInsertTab();if(document.getElementById('tab-staffette').style.display!=='none')renderStaffette();if(document.getElementById('tab-ranking').style.display!=='none')renderRankingTable();if(document.getElementById('tab-trofei')&&document.getElementById('tab-trofei').style.display!=='none')renderTrofei();}
@@ -568,7 +568,7 @@ function setStaffMode(m,btn){
   staffMode=m;
   document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  const d={serpentino:'Serpentino: A=1,6,7,12 · B=2,5,8,11 · C=3,4,9,10 · D=13-16',topheavy:'Top-heavy: A=top 4, poi serpentino B/C · D=13-16',ottimizzato:'Bilanciato ottimale: minimizza scarto Σscore tra le 3 griglie'};
+  const d={serpentino:t('mode_desc_equil'),topheavy:t('mode_desc_top'),ottimizzato:t('mode_desc_bal')};
   document.getElementById('mode-desc').textContent=d[m];
   renderStaffette();
 }
@@ -861,9 +861,9 @@ function renderStaffette(){
   for(const disc of['100m','400m']){
     const squads=buildSquads(disc,staffMode);
     h+=`<div class="card"><div class="card-title">${disc==='100m'?'4×100m':'4×400m'}</div>`;
-    [['A','Griglia 1','sq-a','punta a punti'],['B','Griglia 2','sq-b','punta a punti'],
-     ['C','Griglia 3','sq-c','punta a punti'],['D','Griglia 4','sq-d','paracadute'],
-     ['E','Griglia 5','sq-x','libera'],['F','Griglia 6','sq-x','libera']].forEach(([k,lbl,cls,note])=>{
+    [['A',`${t('relay')} 1`,'sq-a',t('relay_note1')],['B',`${t('relay')} 2`,'sq-b',t('relay_note1')],
+     ['C',`${t('relay')} 3`,'sq-c',t('relay_note1')],['D',`${t('relay')} 4`,'sq-d',t('relay_note4')],
+     ['E',`${t('relay')} 5`,'sq-x',t('relay_free')],['F',`${t('relay')} 6`,'sq-x',t('relay_free')]].forEach(([k,lbl,cls,note])=>{
       const m=squads[k]||[];if(!m.length)return;
       const sum=m.reduce((s,p)=>s+(getScore(p,disc)||0),0);
       h+=`<div class="squad-card ${cls}">
@@ -1016,9 +1016,14 @@ function renderInsertTab(){
 
   DISCS.forEach(d=>{
     const col=DISC_TO_GEAR_COL[d];
+    const centerCol=`center_${col?col.replace('gear_',''):''}`;
     h+=`<div class="input-group">
       <label>${DL[d]||d}</label>
       <input type="number" id="gear_${d}" value="${col&&myRank[col]?myRank[col]:''}" placeholder="es. 9280">
+    </div>
+    <div class="input-group">
+      <label style="color:var(--text3)">Centro ${DL[d]||d} 🏟</label>
+      <input type="number" id="cen_disc_${d}" value="${myRank[centerCol]||''}" placeholder="opzionale">
     </div>`;
   });
 
@@ -1101,10 +1106,13 @@ async function saveRanking(){
   const existing=rankings[targetPlayer]||{};
   const data={...existing, week_id:weekData.id, player_id:targetPlayer, updated_at:new Date().toISOString()};
 
-  // Solo i valori CC per disciplina
+  // Solo i valori CC per disciplina + centro per disciplina
   DISCS.forEach(d=>{
     const col=DISC_TO_GEAR_COL[d];
     if(col) data[col]=parseInt(document.getElementById(`gear_${d}`)?.value)||null;
+    const centerCol=`center_${col?col.replace('gear_',''):''}`;
+    const cval=parseInt(document.getElementById(`cen_disc_${d}`)?.value)||null;
+    if(cval) data[centerCol]=cval;
   });
 
   try{
