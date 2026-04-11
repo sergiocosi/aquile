@@ -964,12 +964,12 @@ function renderInsertTab(){
 
   // ── ATTREZZATURA ──────────────────────────────────────────
   const groups=[
-    {key:'SR',label:'Sprint (100m, 200m, 400m)'},
-    {key:'MR',label:'Media dist. (800m, 1500m)'},
-    {key:'LR',label:'Lunga dist. (5000m, 10000m, Maratona)'},
-    {key:'H', label:'Ostacoli (110H, 400H, 3000S)'},
-    {key:'J', label:'Salti (Lungo, Triplo, Alto, Asta)'},
-    {key:'T', label:'Lanci (Peso, Disco, Martello, Giavellotto)'},
+    {key:'SR', label:'Sprint', discs:['100m','200m','400m']},
+    {key:'MR', label:'Media distanza', discs:['800m','1500m']},
+    {key:'LR', label:'Lunga distanza', discs:['5000m','10000m','Marathon']},
+    {key:'H',  label:'Ostacoli', discs:['110H','400H','3000S']},
+    {key:'J',  label:'Salti', discs:['LJ','TJ','HJ','PV']},
+    {key:'T',  label:'Lanci', discs:['SP','DT','HT','JT']},
   ];
 
   h+=`<div class="card">
@@ -978,11 +978,11 @@ function renderInsertTab(){
       Inserisci i valori che vedi nel gioco. Aggiorna solo quando fai un upgrade — rimangono salvati.
     </p>`;
 
-  groups.forEach(({key,label})=>{
+  groups.forEach(({key,label,discs})=>{
     const gk=key.toLowerCase();
-    h+=`<div style="margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;color:var(--royal);margin-bottom:8px;letter-spacing:.3px">${key} — ${label}</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
+    h+=`<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1.5px solid var(--bg3)">
+      <div style="font-size:11px;font-weight:700;color:var(--royal);margin-bottom:10px;letter-spacing:.3px">${key} — ${label}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
         <div class="input-group" style="min-width:120px">
           <label>Atleta 🔥</label>
           <input type="number" id="atl_${key}" value="${myRank['athlete_'+gk]||''}" placeholder="es. 3300">
@@ -991,13 +991,21 @@ function renderInsertTab(){
           <label>Allenatore 💧</label>
           <input type="number" id="coa_${key}" value="${myRank['coach_'+gk]||''}" placeholder="es. 1000">
         </div>
-        <div class="input-group" style="min-width:120px">
-          <label>Centro 🏟</label>
-          <input type="number" id="cen_${key}" value="${myRank['center_'+gk]||''}" placeholder="es. 700">
-        </div>
+      </div>
+      <div style="font-size:10px;font-weight:600;color:var(--text3);margin-bottom:6px;letter-spacing:.3px">CENTRO 🏟 PER DISCIPLINA</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${discs.map(d=>{
+          const centerCol=`center_${DISC_TO_GEAR_COL[d]?DISC_TO_GEAR_COL[d].replace('gear_',''):''}`;
+          const shortLabel=d==='Marathon'?'Mar':d;
+          return `<div class="input-group" style="min-width:90px">
+            <label style="font-size:10px">${shortLabel}</label>
+            <input type="number" id="cen_disc_${d}" value="${myRank[centerCol]||''}" placeholder="es. 700">
+          </div>`;
+        }).join('')}
       </div>
     </div>`;
   });
+
   h+=`  <button class="btn-primary-sm" onclick="saveGruppi()">Salva atleta / allenatore / centro</button>
     <span id="gruppi-save-msg" style="margin-left:10px;font-size:12px;color:var(--green);display:none">✓ Salvato!</span>
   </div>`;
@@ -1016,14 +1024,9 @@ function renderInsertTab(){
 
   DISCS.forEach(d=>{
     const col=DISC_TO_GEAR_COL[d];
-    const centerCol=`center_${col?col.replace('gear_',''):''}`;
     h+=`<div class="input-group">
       <label>${DL[d]||d}</label>
       <input type="number" id="gear_${d}" value="${col&&myRank[col]?myRank[col]:''}" placeholder="es. 9280">
-    </div>
-    <div class="input-group">
-      <label style="color:var(--text3)">Centro ${DL[d]||d} 🏟</label>
-      <input type="number" id="cen_disc_${d}" value="${myRank[centerCol]||''}" placeholder="opzionale">
     </div>`;
   });
 
@@ -1078,14 +1081,21 @@ async function saveGruppi(){
   const existing=rankings[targetPlayer]||{};
   const data={...existing, week_id:weekData.id, player_id:targetPlayer, updated_at:new Date().toISOString()};
 
+  // Atleta e allenatore per gruppo
   ['SR','MR','LR','H','J','T'].forEach(g=>{
     const gk=g.toLowerCase();
     const atl=parseInt(document.getElementById(`atl_${g}`)?.value)||null;
     const coa=parseInt(document.getElementById(`coa_${g}`)?.value)||null;
-    const cen=parseInt(document.getElementById(`cen_${g}`)?.value)||null;
     if(atl!==null) data[`athlete_${gk}`]=atl;
     if(coa!==null) data[`coach_${gk}`]=coa;
-    if(cen!==null) data[`center_${gk}`]=cen;
+  });
+
+  // Centro per disciplina (ora nel blocco 1)
+  DISCS.forEach(d=>{
+    const col=DISC_TO_GEAR_COL[d];
+    const centerCol=`center_${col?col.replace('gear_',''):''}`;
+    const cval=parseInt(document.getElementById(`cen_disc_${d}`)?.value)||null;
+    if(cval) data[centerCol]=cval;
   });
 
   try{
@@ -1106,13 +1116,10 @@ async function saveRanking(){
   const existing=rankings[targetPlayer]||{};
   const data={...existing, week_id:weekData.id, player_id:targetPlayer, updated_at:new Date().toISOString()};
 
-  // Solo i valori CC per disciplina + centro per disciplina
+  // Solo i valori CC per disciplina (il centro è nel blocco 1 / saveGruppi)
   DISCS.forEach(d=>{
     const col=DISC_TO_GEAR_COL[d];
     if(col) data[col]=parseInt(document.getElementById(`gear_${d}`)?.value)||null;
-    const centerCol=`center_${col?col.replace('gear_',''):''}`;
-    const cval=parseInt(document.getElementById(`cen_disc_${d}`)?.value)||null;
-    if(cval) data[centerCol]=cval;
   });
 
   try{
