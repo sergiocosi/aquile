@@ -355,7 +355,7 @@ function refreshAllUI(){document.querySelectorAll('.tab').forEach((el,i)=>{const
 const GRP_NAMES={'SR':'Sprint','MR':'Media dist.','LR':'Lunga dist.','H':'Ostacoli','J':'Salti','T':'Lanci'};
 // Gear column per disciplina nel DB
 const DISC_TO_GEAR_COL={'100m':'gear_100m','200m':'gear_200m','400m':'gear_400m','800m':'gear_800m','1500m':'gear_1500m','5000m':'gear_5000m','10000m':'gear_10000m','Marathon':'gear_marathon','110H':'gear_110h','400H':'gear_400h','3000S':'gear_3000s','LJ':'gear_lj','TJ':'gear_tj','HJ':'gear_hj','PV':'gear_pv','SP':'gear_sp','DT':'gear_dt','HT':'gear_ht','JT':'gear_jt'};
-const TOP_NAMES=new Set(['Xgux','Mancio90','Rebelwaltz33','FORE','Ale','SergioCosi','Nini']);
+let TOP_NAMES=new Set(['Xgux','Mancio90','Rebelwaltz33','FORE','Ale','SergioCosi','Nini']); // aggiornato dinamicamente ad ogni calcolo
 
 let currentUser=null;
 let isAdmin=false;
@@ -611,25 +611,21 @@ function marginalGain(playerRank,discRanks){
   return 0;
 }
 
-function calcola(){
-  const obl=oblData[currentDay]||{};
-  const players=allPlayers.filter(p=>p.active!==false);
-  msgCalcolato[currentDay]=true; // flag: ho calcolato, non sovrascrivere
+// Calcola dinamicamente i top-N giocatori per score medio sulle discipline
+function computeTopN(n,players){
+  const avgs=players.map(p=>{
+    const scores=DISCS.map(d=>getScore(p.id,d)).filter(s=>s!=null);
+    const avg=scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:0;
+    return{id:p.id,avg};
+  });
+  avgs.sort((a,b)=>b.avg-a.avg);
+  return new Set(avgs.slice(0,n).map(x=>x.id));
+}
 
-  const discState={};
-  DISCS.forEach(d=>discState[d]=[]);
-  for(const p of players)
-    for(const d of(obl[p.id]||[])){
-      const r=getRank(p.id,d);
-      if(r) discState[d].push(r);
-    }
-
-  const libere={};players.forEach(p=>libere[p.id]=[]);
-  const pSlots={};players.forEach(p=>pSlots[p.id]=2);
-
-  for(let iter=0;iter<players.length*2;iter++){
+function greedyPass(candidates,obl,libere,pSlots,discState){
+  for(let iter=0;iter<candidates.length*2;iter++){
     let bestGain=-1,bestP=null,bestD=null;
-    for(const p of players){
+    for(const p of candidates){
       if(pSlots[p.id]<=0) continue;
       const occ=new Set([...(obl[p.id]||[]),...libere[p.id]]);
       for(const d of DISCS){
@@ -645,6 +641,53 @@ function calcola(){
     libere[bestP].push(bestD);
     pSlots[bestP]--;
     discState[bestD].push(getRank(bestP,bestD));
+  }
+}
+
+function calcola(){
+  const obl=oblData[currentDay]||{};
+  const players=allPlayers.filter(p=>p.active!==false);
+  msgCalcolato[currentDay]=true;
+
+  // TOP dinamici: i 10 con score medio più alto questa settimana
+  TOP_NAMES=computeTopN(10,players);
+
+  const discState={};
+  DISCS.forEach(d=>discState[d]=[]);
+  for(const p of players)
+    for(const d of(obl[p.id]||[])){
+      const r=getRank(p.id,d);
+      if(r) discState[d].push(r);
+    }
+
+  const libere={};players.forEach(p=>libere[p.id]=[]);
+  const pSlots={};players.forEach(p=>pSlots[p.id]=2);
+
+  // Fase 1: greedy solo sui TOP 10 — massimizza punteggio dove rendono di più
+  const topPlayers=players.filter(p=>TOP_NAMES.has(p.id));
+  greedyPass(topPlayers,obl,libere,pSlots,discState);
+
+  // Fase 2: greedy sui non-TOP — coprono dove i TOP non arrivano
+  const nonTopPlayers=players.filter(p=>!TOP_NAMES.has(p.id));
+  greedyPass(nonTopPlayers,obl,libere,pSlots,discState);
+
+  // Fase 3: copertura — discipline con meno di 2 giocatori ricevono
+  // il miglior disponibile tra tutti (TOP o non), chiunque abbia ancora slot
+  for(const d of DISCS){
+    if((discState[d]||[]).length>=2) continue;
+    let bestP2=null,bestR2=999;
+    for(const p of players){
+      if(pSlots[p.id]<=0) continue;
+      const occ=new Set([...(obl[p.id]||[]),...libere[p.id]]);
+      if(occ.has(d)) continue;
+      const r=getRank(p.id,d);if(!r) continue;
+      if(r<bestR2){bestR2=r;bestP2=p.id;}
+    }
+    if(bestP2){
+      libere[bestP2].push(d);
+      pSlots[bestP2]--;
+      discState[d].push(bestR2);
+    }
   }
 
   const discCount={};DISCS.forEach(d=>discCount[d]=discState[d].length);
