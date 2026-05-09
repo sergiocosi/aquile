@@ -89,7 +89,7 @@ Claude genera automaticamente il nuovo `index.html` con tutti i dati aggiornati.
 
 File necessari:
 - `CC_potenziale_[...].xlsx` — rank CC attrezzatura
-- `ClubAquile.xlsx` — PB e trofei
+- `ClubItalyTeam.xlsx` — PB e trofei
 - `obbligatorieCC_tot.xlsx` — obbligatorie della settimana
 
 ---
