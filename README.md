@@ -1,8 +1,8 @@
-# 🦅 Aquile CC — Ottimizzatore
+# 🦅 Italy Team CC — Ottimizzatore
 
 Web app per la gestione settimanale del Campionato per Club (CC) in Athletics Championship.
 
-**Link:** `https://sergiocosi.github.io/aquile`
+**Link:** `https://sergiocosi.github.io/italy`
 
 ---
 
@@ -46,7 +46,7 @@ Apri il file e cerca il blocco tra questi due commenti:
 
 ### Come caricare il file aggiornato su GitHub
 
-1. Apri la repo su github.com/[tuonome]/aquile
+1. Apri la repo su github.com/[tuonome]/italy
 2. Clicca su `index.html`
 3. Clicca l'icona matita (Edit) in alto a destra
 4. Oppure: trascina il nuovo file sulla repo — GitHub chiede se sovrascrivere, conferma
@@ -83,7 +83,7 @@ Le libere vengono assegnate con un algoritmo **greedy a guadagno marginale**: ad
 
 Ogni settimana puoi caricare i file Excel aggiornati direttamente su Claude con il messaggio:
 
-> **"Aquile CC, settimana nuova"** + allega i tre file Excel
+> **"Italy Team CC, settimana nuova"** + allega i tre file Excel
 
 Claude genera automaticamente il nuovo `index.html` con tutti i dati aggiornati.
 
@@ -96,6 +96,4 @@ File necessari:
 
 ## Note
 
-- **Gianluca**: rank stimato (media Giuseppe + Cosmo) finché non comunica i dati attrezzatura
-- **Nesli**: uscito dal club, non presente nei dati
 - Il file funziona completamente **offline** una volta caricato, ma richiede HTTPS per funzionare su iOS Safari (quindi usare sempre il link GitHub Pages, non il file locale)
