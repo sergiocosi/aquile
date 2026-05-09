@@ -294,29 +294,41 @@ select{font-size:16px}
     <div id="tab-guida" style="display:none">
       <div class="card">
         <div class="card-title">Come usare questa app</div>
+
         <div class="guide-step">
           <div class="guide-num">1</div>
           <div class="guide-body">
-            <div class="guide-title">Inserisci i tuoi dati — tab "I miei dati"</div>
-            <p>Ogni venerdì, dopo aver ricevuto l'attrezzatura CC, vai nel tab "I miei dati" e inserisci il Valore CC per ogni disciplina e il valore Allenatore per ogni gruppo. L'app calcola automaticamente i rank della settimana.</p>
+            <div class="guide-title">Inserisci i tuoi dati CC — tab "I miei dati"</div>
+            <p>Ogni venerdì, dopo aver ricevuto l'attrezzatura CC, vai nel tab <strong>I miei dati</strong> e inserisci il <strong>Valore CC</strong> per ogni disciplina e il valore <strong>Allenatore</strong> per ogni gruppo di discipline. L'app calcola automaticamente i rank della settimana e ti suggerisce le due discipline libere più convenienti.</p>
           </div>
         </div>
+
         <div class="guide-step">
           <div class="guide-num">2</div>
           <div class="guide-body">
             <div class="guide-title">Inserisci le obbligatorie ogni giorno</div>
-            <p>Dal lunedì al giovedì, apri l'app e inserisci le due discipline obbligatorie assegnate dal sistema. Trovi il form sempre nel tab "I miei dati".</p>
+            <p>Dal lunedì al giovedì, apri l'app e inserisci le due discipline obbligatorie assegnate dal gioco. Le trovi nel tab <strong>I miei dati</strong>, sezione Obbligatorie. Salvale una volta sola — rimangono fino alla settimana successiva.</p>
           </div>
         </div>
+
         <div class="guide-step">
           <div class="guide-num">3</div>
           <div class="guide-body">
             <div class="guide-title">Guarda il messaggio del giorno — tab "Messaggio"</div>
-            <p>Il capitano genera il messaggio giornaliero con le staffette e le libere consigliate. Seleziona il giorno e premi "Calcola". Il messaggio è pronto da copiare su WhatsApp/Telegram.</p>
+            <p>L'admin genera il messaggio giornaliero con le staffette e le libere consigliate. Seleziona il giorno e premi <strong>Calcola</strong>. Il messaggio viene pubblicato e puoi copiarlo su WhatsApp/Telegram con un click.</p>
           </div>
         </div>
+
         <div class="guide-step">
           <div class="guide-num">4</div>
+          <div class="guide-body">
+            <div class="guide-title">Trofei e Personal Best — tab "Trofei"</div>
+            <p>Puoi aggiornare i tuoi <strong>trofei totali</strong> e i tuoi <strong>PB per disciplina</strong> (maschili e femminili) in qualsiasi momento — i dati vengono salvati come bozza personale. Ogni settimana l'admin pubblica uno <strong>snapshot ufficiale</strong> che cristallizza i valori per il calcolo del trend e della classifica. I tempi si inseriscono nel formato <strong>10.45</strong> oppure <strong>1:45.23</strong> oppure <strong>2:10:45</strong> · le distanze in metri: <strong>7.23</strong>.</p>
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <div class="guide-num">5</div>
           <div class="guide-body">
             <div class="guide-title">Come leggere i rank colorati</div>
             <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">
@@ -327,11 +339,12 @@ select{font-size:16px}
             </div>
           </div>
         </div>
+
         <div class="guide-step" style="border-bottom:none">
           <div class="guide-num" style="background:var(--goldlt);color:var(--gold)">★</div>
           <div class="guide-body">
             <div class="guide-title">Password e accesso</div>
-            <p>Seleziona il tuo nome dalla lista e inserisci la tua password. L'admin può inserire dati per conto di qualsiasi giocatore dalla modalità admin.</p>
+            <p>Seleziona il tuo nome dalla lista e inserisci la tua password. Puoi cambiarla in qualsiasi momento dal tab <strong>I miei dati</strong>, sezione Cambia password. L'admin può inserire e modificare dati per conto di qualsiasi giocatore selezionandolo dal menu in cima ad ogni sezione.</p>
           </div>
         </div>
       </div>
@@ -374,6 +387,7 @@ let isAdmin=false;
 let currentDay=1;
 let staffMode='serpentino';
 let weekData=null;
+let pbDrafts={};
 let allPlayers=[];
 let rankings={};   // player_id -> {score_100m, score_200m, ...}
 let oblData={};    // day -> player_id -> [disc1, disc2]
@@ -504,7 +518,7 @@ async function loadAllData() {
     messaggiData = {};
     (msgs||[]).forEach(m=>{ messaggiData[m.day]=m; });
 
-    // Load trofei (settimana corrente + precedente per trend)
+    // Load trofei snapshot (settimana corrente + precedente per trend)
     const trofeiCurr = await sbGet('italy_trofei', `select=*&week_id=eq.${weekData.id}`);
     trofeiData.current = {};
     (trofeiCurr||[]).forEach(r=>{ trofeiData.current[r.player_id]=r; });
@@ -518,6 +532,13 @@ async function loadAllData() {
         (trofeiPrev||[]).forEach(r=>{ trofeiData.previous[r.player_id]=r; });
       }
     } catch(e){} // OK se non c'è settimana precedente
+
+    // Load drafts PB (dati liberi, non legati alla settimana)
+    try {
+      const drafts = await sbGet('italy_pb_drafts', 'select=*');
+      pbDrafts = {};
+      (drafts||[]).forEach(r=>{ pbDrafts[r.player_id]=r; });
+    } catch(e){ pbDrafts={}; }
   } catch(e) { console.error('Data load error:', e); }
 }
 
@@ -1301,7 +1322,9 @@ async function renderTrofei(){
 
   const hasCurrent = Object.keys(currData).length>0;
   const targetPlayer = isAdmin&&adminActingAs ? adminActingAs : currentUser.id;
-  const myTrofei = trofeiData.current[targetPlayer]||{};
+  // Per l'editing usiamo i draft (aggiornabili liberamente)
+  // Per overview e classifica usiamo i snapshot ufficiali (italy_trofei)
+  const myDraft = pbDrafts[targetPlayer]||{};
 
   // ── 1. OVERVIEW TROFEI ───────────────────────────────────────
   let h=`<div class="card">
@@ -1358,7 +1381,7 @@ async function renderTrofei(){
   h+=`<div style="display:flex;gap:16px;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap">
     <div class="input-group" style="min-width:160px">
       <label style="font-size:12px">🏆 ${t('trofei_pts')} ${lang==='it'?'totali':'total'}</label>
-      <input type="number" id="my_trofei" value="${myTrofei.trofei!=null?myTrofei.trofei:''}" placeholder="es. 195000"
+      <input type="number" id="my_trofei" value="${myDraft.trofei!=null?myDraft.trofei:''}" placeholder="es. 195000"
         style="font-size:15px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);width:100%">
     </div>
     <span style="font-size:11px;color:var(--text3);padding-bottom:8px">${lang==='it'?'Aggiorna ogni volta che cambia.':'Update whenever it changes.'}</span>
@@ -1374,9 +1397,9 @@ async function renderTrofei(){
         <div></div>
         ${discs.map(d=>`<div style="font-size:10px;font-weight:600;color:var(--text3);text-align:center;font-family:var(--mono)">${pbLabel(d,'M')}</div>`).join('')}
         <div style="font-size:11px;font-weight:700;color:#0070d0;padding-right:4px">🔵 M</div>
-        ${discs.map(d=>{const col=PB_COL.M[d];const v=myTrofei[col];return `<div><input type="text" id="pb_M_${d}" value="${v!=null?formatPB(v,d):''}" placeholder="${PB_HINT[d]||''}" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border2);border-radius:6px;font-family:var(--mono);text-align:center"></div>`}).join('')}
+        ${discs.map(d=>{const col=PB_COL.M[d];const v=myDraft[col];return `<div><input type="text" id="pb_M_${d}" value="${v!=null?formatPB(v,d):''}" placeholder="${PB_HINT[d]||''}" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border2);border-radius:6px;font-family:var(--mono);text-align:center"></div>`}).join('')}
         <div style="font-size:11px;font-weight:700;color:#c0002a;padding-right:4px">🔴 F</div>
-        ${discs.map(d=>{const col=PB_COL.F[d];const v=myTrofei[col];return `<div><input type="text" id="pb_F_${d}" value="${v!=null?formatPB(v,d):''}" placeholder="${PB_HINT[d]||''}" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border2);border-radius:6px;font-family:var(--mono);text-align:center"></div>`}).join('')}
+        ${discs.map(d=>{const col=PB_COL.F[d];const v=myDraft[col];return `<div><input type="text" id="pb_F_${d}" value="${v!=null?formatPB(v,d):''}" placeholder="${PB_HINT[d]||''}" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border2);border-radius:6px;font-family:var(--mono);text-align:center"></div>`}).join('')}
       </div>
     </div>`;
   });
@@ -1386,6 +1409,15 @@ async function renderTrofei(){
   </p>
   <button class="btn-primary-sm" onclick="savePBs()">${lang==='it'?'Salva trofei & PB':'Save trophies & PBs'}</button>
   <span id="pb-save-msg" style="margin-left:10px;font-size:12px;color:var(--green);display:none">${t('saved')}</span>
+  ${isAdmin?`<div style="margin-top:18px;padding-top:14px;border-top:1.5px solid var(--bg3)">
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">
+      ${lang==='it'?'📸 <strong>Snapshot settimanale</strong> — cristallizza i dati di tutti i giocatori come valori ufficiali della settimana corrente. Usalo una volta a settimana, nel momento che ritieni più opportuno.':'📸 <strong>Weekly snapshot</strong> — locks all players\' current draft data as official values for the current week. Use once a week at the right moment.'}
+    </p>
+    <button onclick="publishSnapshot()" style="background:var(--gold);color:#fff;border:none;border-radius:var(--radius);padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer">
+      📸 ${lang==='it'?'Pubblica snapshot settimanale':'Publish weekly snapshot'}
+    </button>
+    <span id="snapshot-msg" style="margin-left:10px;font-size:12px;display:none"></span>
+  </div>`:''}
   </div>`;
 
   // ── 3. CLASSIFICA PB ─────────────────────────────────────────
@@ -1446,11 +1478,10 @@ async function renderTrofei(){
 
 // ── SAVE PBs (player self-update) ────────────────────────────────
 async function savePBs(){
-  if(!weekData){alert(t('no_week'));return;}
   const targetPlayer=isAdmin&&adminActingAs?adminActingAs:currentUser.id;
   const msg=document.getElementById('pb-save-msg');
-  const existing=trofeiData.current[targetPlayer]||{};
-  const data={...existing, week_id:weekData.id, player_id:targetPlayer, updated_at:new Date().toISOString()};
+  const existing=pbDrafts[targetPlayer]||{};
+  const data={...existing, player_id:targetPlayer, updated_at:new Date().toISOString()};
 
   // Trofei totali
   const trofeiVal=document.getElementById('my_trofei')?.value;
@@ -1467,15 +1498,16 @@ async function savePBs(){
   }
 
   try{
-    await sb('italy_trofei?on_conflict=week_id,player_id',{
+    // Salva in bozza (italy_pb_drafts) — non week_id, aggiornabile liberamente
+    await sb('italy_pb_drafts?on_conflict=player_id',{
       method:'POST', body:JSON.stringify(data),
       prefer:'resolution=merge-duplicates,return=representation'
     });
-    trofeiData.current[targetPlayer]={...existing,...data};
+    pbDrafts[targetPlayer]={...existing,...data};
     msg.style.display='inline';
     setTimeout(()=>msg.style.display='none',3000);
     renderTrofei();
-  }catch(e){ alert(t('error_save')+e.message); }
+  }catch(e){ alert(t('error_save')+': '+e.message); }
 }
 
 // ── SAVE TROFEI (admin bulk) ─────────────────────────────────────
@@ -1504,6 +1536,52 @@ async function saveTrofei(){
     setTimeout(()=>msg.style.display='none',3000);
     renderTrofei();
   }
+}
+
+
+// ── SNAPSHOT SETTIMANALE (admin) ────────────────────────────────
+async function publishSnapshot(){
+  if(!weekData){alert(t('no_week'));return;}
+  if(!isAdmin){return;}
+  const msg=document.getElementById('snapshot-msg');
+  const label=lang==='it'?'Confermi la pubblicazione dello snapshot per tutti i giocatori? I dati correnti saranno cristallizzati come valori ufficiali della settimana.':'Confirm publishing the snapshot for all players? Current draft data will be locked as official values for this week.';
+  if(!confirm(label)) return;
+
+  msg.style.display='inline'; msg.style.color='var(--text2)';
+  msg.textContent=lang==='it'?'Pubblicazione in corso...':'Publishing...';
+
+  let saved=0, errors=0;
+  const players=allPlayers.filter(p=>p.active!==false);
+
+  for(const p of players){
+    const draft=pbDrafts[p.id];
+    if(!draft) continue; // nessun draft → salta
+    const {player_id:_pid, id:_id, updated_at:_ua, ...pbFields}=draft;
+    const data={
+      ...pbFields,
+      week_id:weekData.id,
+      player_id:p.id,
+      updated_at:new Date().toISOString()
+    };
+    try{
+      await sb('italy_trofei?on_conflict=week_id,player_id',{
+        method:'POST', body:JSON.stringify(data),
+        prefer:'resolution=merge-duplicates,return=representation'
+      });
+      trofeiData.current[p.id]={...trofeiData.current[p.id],...data};
+      saved++;
+    }catch(e){ console.error('Snapshot error for '+p.id, e); errors++; }
+  }
+
+  if(errors===0){
+    msg.style.color='var(--green)';
+    msg.textContent=`✓ ${lang==='it'?'Snapshot pubblicato per':'Snapshot published for'} ${saved} ${lang==='it'?'giocatori':'players'}`;
+  } else {
+    msg.style.color='var(--red)';
+    msg.textContent=`${saved} OK, ${errors} ${lang==='it'?'errori':'errors'}`;
+  }
+  setTimeout(()=>{msg.style.display='none';},5000);
+  renderTrofei();
 }
 
 // ── LOGO ─────────────────────────────────────────────────────
