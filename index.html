@@ -1214,41 +1214,96 @@ function trendArrow(curr, prev, lowerBetter=false){
   return `<span style="color:${col};font-weight:700">${arrow} ${sign}${fmt}</span>`;
 }
 
+// ── PB HELPERS ───────────────────────────────────────────────────
+const FIELD_EVENTS = new Set(['LJ','TJ','HJ','PV','SP','DT','HT','JT']);
+// Mappatura (disciplina, genere) → colonna DB
+const PB_COL = {
+  M:{'100m':'pb_m_100m','200m':'pb_m_200m','400m':'pb_m_400m','800m':'pb_m_800m',
+     '1500m':'pb_m_1500m','5000m':'pb_m_5000m','10000m':'pb_m_10000m','Marathon':'pb_m_marathon',
+     '110H':'pb_m_110h','400H':'pb_m_400h','3000S':'pb_m_3000s',
+     'LJ':'pb_m_lj','TJ':'pb_m_tj','HJ':'pb_m_hj','PV':'pb_m_pv',
+     'SP':'pb_m_sp','DT':'pb_m_dt','HT':'pb_m_ht','JT':'pb_m_jt'},
+  F:{'100m':'pb_f_100m','200m':'pb_f_200m','400m':'pb_f_400m','800m':'pb_f_800m',
+     '1500m':'pb_f_1500m','5000m':'pb_f_5000m','10000m':'pb_f_10000m','Marathon':'pb_f_marathon',
+     '110H':'pb_f_100h','400H':'pb_f_400h','3000S':'pb_f_3000s',
+     'LJ':'pb_f_lj','TJ':'pb_f_tj','HJ':'pb_f_hj','PV':'pb_f_pv',
+     'SP':'pb_f_sp','DT':'pb_f_dt','HT':'pb_f_ht','JT':'pb_f_jt'}
+};
+const PB_HINT = {
+  '100m':'10.45','200m':'20.89','400m':'46.78',
+  '800m':'1:45.23','1500m':'3:45.00','5000m':'13:45.00',
+  '10000m':'27:45.00','Marathon':'2:10:45',
+  '110H':'13.45','400H':'48.54','3000S':'8:15.00',
+  'LJ':'7.23m','TJ':'15.45m','HJ':'2.10m','PV':'5.60m',
+  'SP':'18.50m','DT':'55.00m','HT':'65.00m','JT':'72.00m'
+};
+// Label disciplina per genere (100H donne invece di 110H)
+function pbLabel(disc,g){ return (disc==='110H'&&g==='F')?'100H':(DL[disc]||disc); }
+// Formatta PB per display
+function formatPB(val,disc){
+  if(val==null||val===''||val===0) return '—';
+  const v=parseFloat(val);
+  if(isNaN(v)||v<=0) return '—';
+  if(FIELD_EVENTS.has(disc)) return v.toFixed(2)+'m';
+  if(v>=3600){const h=Math.floor(v/3600),m=Math.floor((v%3600)/60),s=Math.round(v%60).toString().padStart(2,'0');return `${h}:${m.toString().padStart(2,'0')}:${s}`;}
+  if(v>=60){const m=Math.floor(v/60),s=(v%60).toFixed(2).padStart(5,'0');return `${m}:${s}`;}
+  return v.toFixed(2);
+}
+// Parsa input utente ("10.45", "1:45.23", "2:10:45") → secondi o metri
+function parsePB(str){
+  if(!str||!str.trim()) return null;
+  str=str.trim().replace(',','.');
+  if(str.includes(':')){
+    const p=str.split(':');
+    if(p.length===2) return parseFloat(p[0])*60+parseFloat(p[1]);
+    if(p.length===3) return parseFloat(p[0])*3600+parseFloat(p[1])*60+parseFloat(p[2]);
+  }
+  const n=parseFloat(str);
+  return isNaN(n)?null:n;
+}
+// Gruppi per la griglia PB input
+function pbGroups(){return[
+  {key:'SR',label:t('grp_sprint'), discs:['100m','200m','400m']},
+  {key:'MR',label:t('grp_mid'),    discs:['800m','1500m']},
+  {key:'LR',label:t('grp_long'),   discs:['5000m','10000m','Marathon']},
+  {key:'H', label:t('grp_hurdles'),discs:['110H','400H','3000S']},
+  {key:'J', label:t('grp_jumps'), discs:['LJ','TJ','HJ','PV']},
+  {key:'T', label:t('grp_throws'),discs:['SP','DT','HT','JT']},
+];}
+
+// ── RENDER TROFEI ────────────────────────────────────────────────
+let pbViewGender='M'; // toggle stato leaderboard PB
+
 async function renderTrofei(){
   const el = document.getElementById('trofei-content');
 
-  // Carica lista settimane se non già fatto
   if(!window.allWeeks){
-    try{
-      window.allWeeks = await sbGet('italy_weeks','select=id,label,date_start&order=id.desc');
-    }catch(e){ window.allWeeks=[]; }
+    try{ window.allWeeks = await sbGet('italy_weeks','select=id,label,date_start&order=id.desc'); }
+    catch(e){ window.allWeeks=[]; }
   }
 
-  // Settimana selezionata (default: quella attiva)
   const selWeekId = window.selectedTrofeiWeek || (weekData?weekData.id:null);
-  const selWeek = (window.allWeeks||[]).find(w=>w.id===selWeekId) || weekData;
 
-  // Dati della settimana selezionata
   let currData = trofeiData.current;
   let prevData = trofeiData.previous;
 
   if(selWeekId && selWeekId !== (weekData?weekData.id:null)){
-    // Carica dati storici
     try{
       const curr = await sbGet('italy_trofei',`select=*&week_id=eq.${selWeekId}`);
       currData={}; (curr||[]).forEach(r=>{ currData[r.player_id]=r; });
-      // Settimana precedente a quella selezionata
       const prevWeek = (window.allWeeks||[]).find(w=>w.id < selWeekId);
       if(prevWeek){
         const prev = await sbGet('italy_trofei',`select=*&week_id=eq.${prevWeek.id}`);
         prevData={}; (prev||[]).forEach(r=>{ prevData[r.player_id]=r; });
-      } else { prevData={}; }
+      } else prevData={};
     }catch(e){ currData={}; prevData={}; }
   }
 
-  const hasCurrent = Object.keys(currData).length > 0;
+  const hasCurrent = Object.keys(currData).length>0;
+  const targetPlayer = isAdmin&&adminActingAs ? adminActingAs : currentUser.id;
+  const myTrofei = trofeiData.current[targetPlayer]||{};
 
-  // ── Selettore settimana ──────────────────────────────────
+  // ── 1. OVERVIEW TROFEI ───────────────────────────────────────
   let h=`<div class="card">
     <div class="card-title">${t('trofei_title')}</div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
@@ -1256,115 +1311,194 @@ async function renderTrofei(){
         style="font-size:13px;padding:7px 12px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);min-width:220px">
         ${(window.allWeeks||[]).map(w=>`<option value="${w.id}"${w.id===selWeekId?' selected':''}>${w.label}</option>`).join('')}
       </select>
-      <span style="font-size:11px;color:var(--text3)">← seleziona settimana per vedere lo storico</span>
+      <span style="font-size:11px;color:var(--text3)">← ${lang==='it'?'storico settimane':'weekly history'}</span>
     </div>`;
 
   if(!hasCurrent){
     h+=`<div class="alert a-warn">${t('trofei_no_data')}</div>`;
   } else {
-    const sorted = allPlayers
-      .filter(p=>currData[p.id])
+    const sorted=allPlayers.filter(p=>currData[p.id])
       .sort((a,b)=>(currData[b.id].trofei||0)-(currData[a.id].trofei||0));
-
     h+=`<div style="overflow-x:auto"><table>
       <thead><tr>
-        <th>#</th>
-        <th>${t('trofei_player')}</th>
-        <th>${t('trofei_pts')}</th>
-        <th>${t('trofei_trend')}</th>
-        <th>${t('trofei_100')}</th>
-        <th>${t('trofei_trend')}</th>
-        <th>${t('trofei_400')}</th>
-        <th>${t('trofei_trend')}</th>
+        <th>#</th><th>${t('trofei_player')}</th>
+        <th>${t('trofei_pts')}</th><th>${t('trofei_trend')}</th>
       </tr></thead><tbody>`;
-
     sorted.forEach((p,i)=>{
-      const cur = currData[p.id]||{};
-      const prv = prevData[p.id]||{};
-      const topBadge = TOP_NAMES.has(p.id)?` <span class="badge b-top" style="font-size:9px">TOP</span>`:'';
+      const cur=currData[p.id]||{}, prv=prevData[p.id]||{};
+      const badge=TOP_NAMES.has(p.id)?` <span class="badge b-top" style="font-size:9px">TOP</span>`:'';
       h+=`<tr>
         <td style="font-family:var(--mono);color:var(--text3);font-weight:700">${i+1}</td>
-        <td style="font-weight:600">${p.name}${topBadge}</td>
+        <td style="font-weight:600">${p.name}${badge}</td>
         <td style="font-family:var(--mono);font-weight:700">${cur.trofei!=null?cur.trofei.toLocaleString():'—'}</td>
         <td>${trendArrow(cur.trofei,prv.trofei)}</td>
-        <td style="font-family:var(--mono)">${cur.best_100m||'—'}</td>
-        <td>${trendArrow(cur.best_100m,prv.best_100m,true)}</td>
-        <td style="font-family:var(--mono)">${cur.best_400m||'—'}</td>
-        <td>${trendArrow(cur.best_400m,prv.best_400m,true)}</td>
       </tr>`;
     });
     h+=`</tbody></table></div>`;
   }
   h+=`</div>`;
 
-  // ── Form inserimento (solo admin) ────────────────────────
+  // ── 2. I MIEI DATI (trofei + PB) — tutti i giocatori ────────
+  h+=`<div class="card">
+    <div class="card-title">${lang==='it'?'✏️ Aggiorna i miei dati':'✏️ Update my data'}</div>`;
+
+  // Admin selector
   if(isAdmin){
-    h+=`<div class="card">
-      <div class="card-title">${t('trofei_insert')}</div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:14px">
-        Inserisci i dati settimanali. I trend vengono calcolati automaticamente rispetto alla settimana precedente.
-      </p>
-      <div style="overflow-x:auto"><table>
-        <thead><tr>
-          <th style="min-width:120px">${t('trofei_player')}</th>
-          <th style="min-width:110px">${t('trofei_pts')}</th>
-          <th style="min-width:100px">${t('trofei_100')}</th>
-          <th style="min-width:100px">${t('trofei_400')}</th>
-        </tr></thead><tbody>`;
-
-    allPlayers.filter(p=>p.active!==false).forEach(p=>{
-      const cur = trofeiData.current[p.id]||{};
-      h+=`<tr>
-        <td style="font-weight:600">${p.name}</td>
-        <td><input type="number" id="tr_pts_${p.id}" value="${cur.trofei!=null?cur.trofei:''}"
-          style="width:100px;font-size:13px;padding:5px 8px;border:1.5px solid var(--border2);border-radius:6px"></td>
-        <td><input type="number" step="0.001" id="tr_100_${p.id}" value="${cur.best_100m||''}"
-          style="width:90px;font-size:13px;padding:5px 8px;border:1.5px solid var(--border2);border-radius:6px" placeholder="es. 9.663"></td>
-        <td><input type="number" step="0.001" id="tr_400_${p.id}" value="${cur.best_400m||''}"
-          style="width:90px;font-size:13px;padding:5px 8px;border:1.5px solid var(--border2);border-radius:6px" placeholder="es. 43.894"></td>
-      </tr>`;
-    });
-
-    h+=`</tbody></table></div>
-      <div style="margin-top:14px">
-        <button class="btn-primary-sm" onclick="saveTrofei()">${t('trofei_save')}</button>
-        <span id="trofei-save-msg" style="margin-left:10px;font-size:12px;color:var(--green);display:none">${t('saved')}</span>
-      </div>
+    h+=`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+      <select id="trofei-admin-sel" onchange="adminActingAs=this.value||null;renderTrofei()"
+        style="font-size:14px;padding:8px 12px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);width:200px">
+        <option value="">— me stesso (${currentUser.name}) —</option>
+        ${allPlayers.filter(p=>p.id!==currentUser.id&&p.active!==false).map(p=>`<option value="${p.id}"${adminActingAs===p.id?' selected':''}>${p.name}</option>`).join('')}
+      </select>
+      <span style="font-size:12px;color:var(--text3)">${t('admin_for')} <strong>${adminActingAs||currentUser.name}</strong></span>
     </div>`;
   }
+
+  // Trofei count
+  h+=`<div style="display:flex;gap:16px;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap">
+    <div class="input-group" style="min-width:160px">
+      <label style="font-size:12px">🏆 ${t('trofei_pts')} ${lang==='it'?'totali':'total'}</label>
+      <input type="number" id="my_trofei" value="${myTrofei.trofei!=null?myTrofei.trofei:''}" placeholder="es. 195000"
+        style="font-size:15px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);width:100%">
+    </div>
+    <span style="font-size:11px;color:var(--text3);padding-bottom:8px">${lang==='it'?'Aggiorna ogni volta che cambia.':'Update whenever it changes.'}</span>
+  </div>`;
+
+  // PB per gruppo: riga M + riga F
+  h+=`<div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.5px;margin-bottom:10px;font-family:var(--mono)">${lang==='it'?'PERSONAL BEST — per disciplina':'PERSONAL BESTS — by event'}</div>`;
+
+  pbGroups().forEach(({key,label,discs})=>{
+    h+=`<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1.5px solid var(--bg3)">
+      <div style="font-size:11px;font-weight:700;color:var(--royal);margin-bottom:8px;letter-spacing:.3px">${key} — ${label}</div>
+      <div style="display:grid;grid-template-columns:auto repeat(${discs.length},1fr);gap:6px;align-items:center">
+        <div></div>
+        ${discs.map(d=>`<div style="font-size:10px;font-weight:600;color:var(--text3);text-align:center;font-family:var(--mono)">${pbLabel(d,'M')}</div>`).join('')}
+        <div style="font-size:11px;font-weight:700;color:#0070d0;padding-right:4px">🔵 M</div>
+        ${discs.map(d=>{const col=PB_COL.M[d];const v=myTrofei[col];return `<div><input type="text" id="pb_M_${d}" value="${v!=null?formatPB(v,d):''}" placeholder="${PB_HINT[d]||''}" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border2);border-radius:6px;font-family:var(--mono);text-align:center"></div>`}).join('')}
+        <div style="font-size:11px;font-weight:700;color:#c0002a;padding-right:4px">🔴 F</div>
+        ${discs.map(d=>{const col=PB_COL.F[d];const v=myTrofei[col];return `<div><input type="text" id="pb_F_${d}" value="${v!=null?formatPB(v,d):''}" placeholder="${PB_HINT[d]||''}" style="width:100%;font-size:12px;padding:5px 6px;border:1.5px solid var(--border2);border-radius:6px;font-family:var(--mono);text-align:center"></div>`}).join('')}
+      </div>
+    </div>`;
+  });
+
+  h+=`<p style="font-size:11px;color:var(--text3);margin-bottom:12px">
+    ${lang==='it'?'💡 Inserisci i tempi come <strong>10.45</strong> o <strong>1:45.23</strong> · le distanze come <strong>7.23</strong> · lascia vuoto se non hai PB.':'💡 Enter times as <strong>10.45</strong> or <strong>1:45.23</strong> · distances as <strong>7.23</strong> · leave blank if no PB.'}
+  </p>
+  <button class="btn-primary-sm" onclick="savePBs()">${lang==='it'?'Salva trofei & PB':'Save trophies & PBs'}</button>
+  <span id="pb-save-msg" style="margin-left:10px;font-size:12px;color:var(--green);display:none">${t('saved')}</span>
+  </div>`;
+
+  // ── 3. CLASSIFICA PB ─────────────────────────────────────────
+  const pbDisc = window.pbViewDisc||'100m';
+  const pbGen  = window.pbViewGender||'M';
+  const isFld  = FIELD_EVENTS.has(pbDisc);
+
+  h+=`<div class="card">
+    <div class="card-title">${lang==='it'?'🏅 Classifica PB':'🏅 PB Rankings'}</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+      <select id="pb-disc-sel" onchange="window.pbViewDisc=this.value;renderTrofei()"
+        style="font-size:13px;padding:7px 12px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2)">
+        ${DISCS.map(d=>`<option value="${d}"${d===pbDisc?' selected':''}>${DL[d]||d}</option>`).join('')}
+      </select>
+      <div style="display:flex;border:1.5px solid var(--border2);border-radius:var(--radius);overflow:hidden">
+        <button onclick="window.pbViewGender='M';renderTrofei()"
+          style="padding:7px 16px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:${pbGen==='M'?'#0070d0':'var(--bg2)'};color:${pbGen==='M'?'#fff':'var(--text2)'}">🔵 M</button>
+        <button onclick="window.pbViewGender='F';renderTrofei()"
+          style="padding:7px 16px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:${pbGen==='F'?'#c0002a':'var(--bg2)'};color:${pbGen==='F'?'#fff':'var(--text2)'}">🔴 F</button>
+      </div>
+      <span style="font-size:12px;color:var(--text3)">${pbLabel(pbDisc,pbGen)} — ${isFld?(lang==='it'?'più è meglio':'higher is better'):(lang==='it'?'meno è meglio':'lower is better')}</span>
+    </div>`;
+
+  const pbCol = PB_COL[pbGen][pbDisc];
+  const ranked = allPlayers
+    .filter(p=>trofeiData.current[p.id]&&trofeiData.current[p.id][pbCol]!=null)
+    .map(p=>({p, cur:trofeiData.current[p.id][pbCol], prv:(trofeiData.previous[p.id]||{})[pbCol]}))
+    .sort((a,b)=> isFld ? b.cur-a.cur : a.cur-b.cur);
+
+  if(!ranked.length){
+    h+=`<div class="alert a-warn">${t('trofei_no_data')}</div>`;
+  } else {
+    h+=`<div style="overflow-x:auto"><table>
+      <thead><tr>
+        <th>#</th><th>${t('trofei_player')}</th>
+        <th>${lang==='it'?'Settimana corrente':'Current week'}</th>
+        <th>${lang==='it'?'Settimana prec.':'Prev. week'}</th>
+        <th>${t('trofei_trend')}</th>
+      </tr></thead><tbody>`;
+    ranked.forEach(({p,cur,prv},i)=>{
+      const badge=TOP_NAMES.has(p.id)?` <span class="badge b-top" style="font-size:9px">TOP</span>`:'';
+      h+=`<tr>
+        <td style="font-family:var(--mono);color:var(--text3);font-weight:700">${i+1}</td>
+        <td style="font-weight:600">${p.name}${badge}</td>
+        <td style="font-family:var(--mono);font-weight:700">${formatPB(cur,pbDisc)}</td>
+        <td style="font-family:var(--mono);color:var(--text3)">${formatPB(prv,pbDisc)}</td>
+        <td>${trendArrow(cur,prv,!isFld)}</td>
+      </tr>`;
+    });
+    h+=`</tbody></table></div>`;
+  }
+  h+=`</div>`;
+
+
 
   el.innerHTML=h;
 }
 
+// ── SAVE PBs (player self-update) ────────────────────────────────
+async function savePBs(){
+  if(!weekData){alert(t('no_week'));return;}
+  const targetPlayer=isAdmin&&adminActingAs?adminActingAs:currentUser.id;
+  const msg=document.getElementById('pb-save-msg');
+  const existing=trofeiData.current[targetPlayer]||{};
+  const data={...existing, week_id:weekData.id, player_id:targetPlayer, updated_at:new Date().toISOString()};
+
+  // Trofei totali
+  const trofeiVal=document.getElementById('my_trofei')?.value;
+  if(trofeiVal) data.trofei=parseInt(trofeiVal);
+
+  // PB per disciplina e genere
+  for(const g of['M','F']){
+    for(const d of DISCS){
+      const col=PB_COL[g][d];
+      const raw=document.getElementById(`pb_${g}_${d}`)?.value;
+      const parsed=parsePB(raw);
+      if(parsed!==null) data[col]=parsed;
+    }
+  }
+
+  try{
+    await sb('italy_trofei?on_conflict=week_id,player_id',{
+      method:'POST', body:JSON.stringify(data),
+      prefer:'resolution=merge-duplicates,return=representation'
+    });
+    trofeiData.current[targetPlayer]={...existing,...data};
+    msg.style.display='inline';
+    setTimeout(()=>msg.style.display='none',3000);
+    renderTrofei();
+  }catch(e){ alert(t('error_save')+e.message); }
+}
+
+// ── SAVE TROFEI (admin bulk) ─────────────────────────────────────
 async function saveTrofei(){
   if(!weekData){alert(t('no_week'));return;}
   const msg=document.getElementById('trofei-save-msg');
   const players=allPlayers.filter(p=>p.active!==false);
   let saved=0;
-
   for(const p of players){
-    const pts = document.getElementById(`tr_pts_${p.id}`)?.value;
-    const s100 = document.getElementById(`tr_100_${p.id}`)?.value;
-    const s400 = document.getElementById(`tr_400_${p.id}`)?.value;
-    if(!pts && !s100 && !s400) continue;
-
-    const data = {
-      week_id: weekData.id, player_id: p.id,
-      trofei: pts ? parseInt(pts) : null,
-      best_100m: s100 ? parseFloat(s100) : null,
-      best_400m: s400 ? parseFloat(s400) : null,
-      updated_at: new Date().toISOString()
-    };
+    const pts=document.getElementById(`tr_pts_${p.id}`)?.value;
+    if(!pts) continue;
+    const existing=trofeiData.current[p.id]||{};
+    const data={...existing, week_id:weekData.id, player_id:p.id,
+      trofei:parseInt(pts), updated_at:new Date().toISOString()};
     try{
       await sb('italy_trofei?on_conflict=week_id,player_id',{
         method:'POST', body:JSON.stringify(data),
         prefer:'resolution=merge-duplicates,return=representation'
       });
-      trofeiData.current[p.id]={...trofeiData.current[p.id],...data};
+      trofeiData.current[p.id]={...existing,...data};
       saved++;
-    }catch(e){ console.error('Trofei save error:', e); }
+    }catch(e){ console.error('Trofei save error:',e); }
   }
-
   if(saved>0){
     msg.style.display='inline';
     setTimeout(()=>msg.style.display='none',3000);
