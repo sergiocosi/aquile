@@ -424,6 +424,18 @@ async function sbUpsert(table, data) {
 
 // ── INIT ────────────────────────────────────────────────────
 async function init() {
+  // Auto-login se c'è una sessione salvata
+  const savedUser = localStorage.getItem('italy_logged_user');
+  if (savedUser) {
+    try {
+      currentUser = JSON.parse(savedUser);
+      await loginSuccess();
+      return;
+    } catch(e) {
+      localStorage.removeItem('italy_logged_user');
+    }
+  }
+
   // Load players for login dropdown
   try {
     const players = await sbGet('italy_players', 'select=id,name&active=eq.true&order=name');
@@ -454,6 +466,7 @@ async function doLogin() {
       errEl.style.display='block'; errEl.textContent='Password errata o giocatore non trovato.'; return;
     }
     currentUser = res[0];
+    localStorage.setItem('italy_logged_user', JSON.stringify(currentUser));
     isAdmin = res[0].is_admin;
     loginSuccess();
   } catch(e) {
@@ -479,6 +492,7 @@ async function loginSuccess() {
 
 function logout() {
   currentUser=null; isAdmin=false; adminActingAs=null;
+  localStorage.removeItem('italy_logged_user');
   weekData=null; rankings={}; oblData={};
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app-header').style.display='none';
