@@ -429,6 +429,10 @@ async function init() {
   if (savedUser) {
     try {
       currentUser = JSON.parse(savedUser);
+      isAdmin = currentUser.is_admin || false;
+      // Carica allPlayers anche in auto-login (serve per i selettori admin)
+      const players = await sbGet('italy_players', 'select=id,name&active=eq.true&order=name');
+      allPlayers = players;
       await loginSuccess();
       return;
     } catch(e) {
