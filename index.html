@@ -429,10 +429,6 @@ async function init() {
   if (savedUser) {
     try {
       currentUser = JSON.parse(savedUser);
-      isAdmin = currentUser.is_admin || false;
-      // Carica allPlayers anche in auto-login (serve per i selettori admin)
-      const players = await sbGet('italy_players', 'select=id,name&active=eq.true&order=name');
-      allPlayers = players;
       await loginSuccess();
       return;
     } catch(e) {
@@ -486,6 +482,14 @@ async function loginSuccess() {
   if (isAdmin) document.getElementById('admin-badge').style.display='inline';
   if (isAdmin) document.getElementById('admin-calcola-bar').style.display='block';
   else document.getElementById('user-msg-bar').style.display='block';
+
+  // Carica sempre la lista giocatori (serve per dropdown admin e per i dati)
+  // Lo facciamo qui e non solo in init() perché al refresh il blocco login viene saltato
+  if (!allPlayers.length) {
+    try {
+      allPlayers = await sbGet('italy_players', 'select=id,name&active=eq.true&order=name');
+    } catch(e) { console.error('Players load error:', e); }
+  }
 
   await loadWeekData();
   await loadAllData();
@@ -1034,7 +1038,7 @@ function renderInsertTab(){
     const col=DISC_TO_GEAR_COL[d];
     h+=`<div class="input-group">
       <label>${DL[d]||d}</label>
-      <input type="number" id="gear_${d}" value="${col&&myRank[col]?myRank[col]:''}" placeholder="es. 9280">
+      <input type="number" id="gear_${d}" step="10" value="${col&&myRank[col]?myRank[col]:''}" placeholder="es. 9280">
     </div>`;
   });
 
@@ -1066,7 +1070,7 @@ function renderInsertTab(){
     const gk=key.toLowerCase();
     h+=`<div class="input-group" style="min-width:120px">
       <label style="font-size:11px">${key} — ${label}</label>
-      <input type="number" id="coa_${key}" value="${myRank['coach_'+gk]||''}" placeholder="es. 1000">
+      <input type="number" id="coa_${key}" step="100" value="${myRank['coach_'+gk]||''}" placeholder="es. 1000">
     </div>`;
   });
 
